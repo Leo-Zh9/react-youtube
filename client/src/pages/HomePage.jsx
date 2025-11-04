@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import Carousel from '../components/Carousel';
 import { getAllVideos } from '../services/api';
 
 const HomePage = () => {
+  const location = useLocation();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // Fetch videos from backend on component mount
   useEffect(() => {
@@ -28,6 +31,22 @@ const HomePage = () => {
 
     fetchVideos();
   }, []);
+
+  // Show upload success message if redirected from upload page
+  useEffect(() => {
+    if (location.state?.uploadSuccess) {
+      setUploadSuccess(true);
+      const videoTitle = location.state?.videoTitle || 'Your video';
+      
+      // Clear the success message after 5 seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 5000);
+
+      // Clear the location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // Handle search filtering
   const handleSearch = (query) => {
@@ -123,6 +142,41 @@ const HomePage = () => {
     <div className="bg-black min-h-screen">
       {/* Navigation Bar */}
       <Navbar onSearch={handleSearch} />
+
+      {/* Upload Success Message */}
+      {uploadSuccess && (
+        <div className="fixed top-20 right-4 z-50 bg-green-900 bg-opacity-90 border border-green-500 text-green-200 px-6 py-4 rounded-lg shadow-lg animate-fade-in">
+          <div className="flex items-center">
+            <svg
+              className="w-6 h-6 mr-3 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <p className="font-semibold">Video uploaded successfully!</p>
+              <p className="text-sm">Your video is now live</p>
+            </div>
+            <button
+              onClick={() => setUploadSuccess(false)}
+              className="ml-4 text-green-200 hover:text-white"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section - Featured Video */}
       <HeroSection featuredVideo={videosByCategory.featured} />

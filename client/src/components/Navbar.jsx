@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ onSearch }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -42,24 +44,24 @@ const Navbar = ({ onSearch }) => {
 
           {/* Navigation Links */}
           <div className="hidden md:flex space-x-6">
-            <a
-              href="#home"
+            <button
+              onClick={() => navigate('/')}
               className="text-white hover:text-gray-300 transition-colors font-medium"
             >
               Home
-            </a>
-            <a
-              href="#upload"
+            </button>
+            <button
+              onClick={() => navigate('/upload')}
               className="text-white hover:text-gray-300 transition-colors font-medium"
             >
               Upload
-            </a>
-            <a
-              href="#mylist"
+            </button>
+            <button
+              onClick={() => navigate('/mylist')}
               className="text-white hover:text-gray-300 transition-colors font-medium"
             >
               My List
-            </a>
+            </button>
           </div>
         </div>
 

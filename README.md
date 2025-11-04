@@ -1,6 +1,6 @@
 # React YouTube - Netflix UI (Interview Assessment)
 
-A full-stack application with YouTube functionality and Netflix-style UI, now powered by MongoDB.
+A full-stack application with YouTube functionality and Netflix-style UI, powered by MongoDB.
 
 ## Project Structure
 
@@ -25,7 +25,7 @@ A full-stack application with YouTube functionality and Netflix-style UI, now po
 **Option B: MongoDB Atlas (Cloud)**
 - Create free account at https://www.mongodb.com/cloud/atlas
 - Create cluster and get connection string
-- See [MONGODB_SETUP.md](server/MONGODB_SETUP.md) for details
+- See [server/MONGODB_SETUP.md](server/MONGODB_SETUP.md) for details
 
 ### 2. Install Dependencies
 
@@ -47,11 +47,6 @@ PORT=5000
 MONGO_URI=mongodb://localhost:27017/react-youtube
 ```
 
-For MongoDB Atlas, use your connection string:
-```env
-MONGO_URI=mongodb+srv://username:password@cluster.xxxxx.mongodb.net/react-youtube
-```
-
 ### 4. Seed the Database
 
 ```bash
@@ -59,36 +54,21 @@ cd server
 npm run seed
 ```
 
-This loads 11 sample videos into MongoDB.
+### 5. Start the Application
 
-### 5. Start the Backend Server
-
+**Terminal 1 - Backend:**
 ```bash
 cd server
 npm run dev
 ```
 
-Server runs on: **http://localhost:5000**
-
-You should see:
-```
-✅ MongoDB Connected: localhost
-📂 Database: react-youtube
-🚀 Server is running on http://localhost:5000
-```
-
-### 6. Start the Frontend Client
-
-In a new terminal:
-
+**Terminal 2 - Frontend:**
 ```bash
 cd client
 npm run dev
 ```
 
-Client runs on: **http://localhost:5173**
-
-### 7. Open in Browser
+### 6. Open in Browser
 
 Visit: **http://localhost:5173**
 
@@ -103,6 +83,17 @@ Visit: **http://localhost:5173**
 - ✨ Smooth hover animations and transitions
 - 🎯 Video cards with play icons and metadata
 - 📺 Full-featured video player with HTML5 controls
+
+### Video Upload Feature 🎥 (NEW!)
+- 📤 Upload videos directly through web interface
+- 📝 Complete form with validation
+- ✅ Real-time input validation
+- 🎯 Auto-categorization options
+- ⏱️ Duration and rating settings
+- 🖼️ Custom thumbnail support
+- ✨ Success notifications
+- 🔄 Auto-refresh home page
+- See [client/UPLOAD_FEATURE.md](client/UPLOAD_FEATURE.md) for details
 
 ### MongoDB Backend 🗄️
 - 🔌 RESTful API with Express
@@ -119,19 +110,94 @@ Visit: **http://localhost:5173**
 - 🔄 Automatic state management
 - 🎯 Real-time search and filtering
 
+## Application Routes
+
+- `/` - Home Page (video carousels)
+- `/watch/:id` - Video Player Page
+- `/upload` - Upload New Video *(NEW!)*
+
 ## API Endpoints
 
 ### Videos
 - `GET /api/videos` - Get all videos from MongoDB
 - `GET /api/videos/:id` - Get single video by ID
-- `POST /api/videos` - Create new video in MongoDB
-- `PUT /api/videos/:id` - Update video in MongoDB
-- `DELETE /api/videos/:id` - Delete video from MongoDB
+- `POST /api/videos` - Create new video *(Upload feature)*
+- `PUT /api/videos/:id` - Update video
+- `DELETE /api/videos/:id` - Delete video
 
 ### Health
 - `GET /api/health` - Health check endpoint
 
 See [server/API_TESTING.md](server/API_TESTING.md) for detailed API documentation.
+
+## Testing the Upload Feature
+
+### Step 1: Start Backend & Frontend
+
+```bash
+# Terminal 1
+cd server
+npm run dev
+
+# Terminal 2
+cd client
+npm run dev
+```
+
+### Step 2: Navigate to Upload Page
+
+Click "Upload" in the navbar or go to: http://localhost:5173/upload
+
+### Step 3: Fill the Form
+
+**Use these test values:**
+
+```
+Title: My Test Video
+Description: This is a test upload
+Video URL: https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
+Thumbnail: https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=250&fit=crop
+Duration: 9:56
+Category: Test
+Rating: G
+```
+
+### Step 4: Submit
+
+- Click "Upload Video"
+- Wait for success message
+- Auto-redirects to home page
+- Verify new video appears
+
+### Testing Checklist
+
+- [ ] Upload page loads
+- [ ] Form validation works
+- [ ] Can submit with required fields only
+- [ ] Loading spinner shows during upload
+- [ ] Success message displays
+- [ ] Redirects to home after success
+- [ ] New video appears on home page
+- [ ] Can play uploaded video
+- [ ] Cancel button works
+
+## Tech Stack
+
+### Frontend
+- React 18
+- Vite
+- React Router DOM
+- Tailwind CSS
+- Swiper.js (carousels)
+- Fetch API (HTTP requests)
+
+### Backend
+- Node.js
+- Express
+- **MongoDB** (Database)
+- **Mongoose** (ODM)
+- CORS
+- dotenv
 
 ## MongoDB Schema
 
@@ -153,71 +219,6 @@ See [server/API_TESTING.md](server/API_TESTING.md) for detailed API documentatio
 }
 ```
 
-## Testing the Integration
-
-### 1. Verify MongoDB Connection
-
-```bash
-mongosh
-use react-youtube
-db.videos.find()
-```
-
-### 2. Test Backend API
-
-```powershell
-# Get all videos from MongoDB
-Invoke-RestMethod -Uri "http://localhost:5000/api/videos"
-
-# Get specific video
-Invoke-RestMethod -Uri "http://localhost:5000/api/videos/trend-1"
-```
-
-### 3. Test Frontend
-
-1. Ensure MongoDB and backend are running
-2. Open http://localhost:5173
-3. Verify videos load from MongoDB
-4. Click a video to test video player
-5. Test search functionality
-6. Check recommended videos sidebar
-
-### Testing Checklist
-
-**MongoDB:**
-- [ ] MongoDB is running (local or Atlas)
-- [ ] Database is seeded with sample data
-- [ ] Can connect using mongosh or Compass
-
-**Backend:**
-- [ ] Server connects to MongoDB successfully
-- [ ] API endpoints return data from MongoDB
-- [ ] CRUD operations work correctly
-
-**Frontend:**
-- [ ] Videos load from MongoDB API
-- [ ] Search filters videos
-- [ ] Video player works
-- [ ] Error handling displays properly
-
-## Tech Stack
-
-### Frontend
-- React 18
-- Vite
-- React Router DOM
-- Tailwind CSS
-- Swiper.js (carousels)
-- Fetch API (HTTP requests)
-
-### Backend
-- Node.js
-- Express
-- **MongoDB** (Database)
-- **Mongoose** (ODM)
-- CORS
-- dotenv
-
 ## Architecture
 
 ### Data Flow
@@ -226,37 +227,47 @@ React → API Service → Express → Mongoose → MongoDB
                     ← JSON     ← Model   ←
 ```
 
-### File Structure
+### Upload Flow
+```
+Upload Form → Validate → POST /api/videos → MongoDB → Home Page
+              ↓                              ↓          ↓
+         Show errors                    Save video  Display video
+```
+
+## File Structure
 
 ```
-server/
-├── src/
-│   ├── config/
-│   │   └── database.js         # MongoDB connection
-│   ├── models/
-│   │   └── Video.js            # Mongoose schema (NEW)
-│   ├── routes/
-│   │   └── videoRoutes.js      # API routes (MongoDB)
-│   ├── scripts/
-│   │   └── seedDatabase.js     # Database seeder (NEW)
-│   └── server.js               # Express app
-├── data/
-│   └── videos.json             # Used for seeding
-├── MONGODB_SETUP.md            # MongoDB setup guide
-└── package.json
-
 client/
 ├── src/
 │   ├── services/
 │   │   └── api.js              # API service
 │   ├── pages/
-│   │   ├── HomePage.jsx        # Fetches from MongoDB API
-│   │   └── VideoPlayerPage.jsx # Fetches from MongoDB API
-│   └── components/
-│       ├── Navbar.jsx
-│       ├── HeroSection.jsx
-│       ├── Carousel.jsx
-│       └── VideoCard.jsx
+│   │   ├── HomePage.jsx        # Home with carousels
+│   │   ├── VideoPlayerPage.jsx # Video player
+│   │   └── UploadPage.jsx      # Upload form (NEW)
+│   ├── components/
+│   │   ├── Navbar.jsx          # Navigation with Upload link
+│   │   ├── HeroSection.jsx
+│   │   ├── Carousel.jsx
+│   │   └── VideoCard.jsx
+│   └── App.jsx                 # Router with /upload route
+├── UPLOAD_FEATURE.md           # Upload documentation (NEW)
+└── INTEGRATION.md              # Integration guide
+
+server/
+├── src/
+│   ├── config/
+│   │   └── database.js         # MongoDB connection
+│   ├── models/
+│   │   └── Video.js            # Mongoose schema
+│   ├── routes/
+│   │   └── videoRoutes.js      # API routes (includes POST)
+│   ├── scripts/
+│   │   └── seedDatabase.js     # Database seeder
+│   └── server.js               # Express app
+├── MONGODB_SETUP.md            # MongoDB setup guide
+├── DEBUGGING_GUIDE.md          # Troubleshooting
+└── START_SERVER.md             # Quick start guide
 ```
 
 ## Development Scripts
@@ -276,97 +287,102 @@ npm run build  # Build for production
 
 ## Troubleshooting
 
-### MongoDB not connecting?
+### Upload not working?
 
-1. **Check MongoDB is running:**
-   ```bash
-   mongosh --eval "db.version()"
+1. **Check backend is running:**
+   ```powershell
+   Invoke-RestMethod -Uri "http://localhost:5000/api/health"
    ```
 
-2. **Verify connection string in `.env`**
+2. **Check MongoDB connection:**
+   ```bash
+   mongosh react-youtube --eval "db.videos.countDocuments()"
+   ```
 
-3. **For Atlas:** Check IP whitelist and credentials
+3. **Check browser console** for errors
+
+4. **Verify CORS** - Backend should allow `http://localhost:5173`
 
 ### Videos not loading?
 
-1. **Ensure MongoDB is running and seeded:**
-   ```bash
-   cd server
-   npm run seed
-   ```
+1. Ensure MongoDB is running and seeded
+2. Check server console for MongoDB connection message
+3. Test API directly: `http://localhost:5000/api/videos`
 
-2. **Check server console for MongoDB connection message**
+### Form validation errors?
 
-3. **Test API directly:**
-   ```bash
-   Invoke-RestMethod -Uri "http://localhost:5000/api/videos"
-   ```
-
-### CORS errors?
-
-Update `server/src/server.js`:
-```javascript
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true,
-}));
-```
+1. Title and Video URL are required
+2. URLs must be valid format (http:// or https://)
+3. Check browser console for validation errors
 
 ## Documentation
 
-- [MongoDB Setup Guide](server/MONGODB_SETUP.md) - Complete MongoDB installation and configuration
+- [MongoDB Setup Guide](server/MONGODB_SETUP.md) - Complete MongoDB installation
 - [API Testing Guide](server/API_TESTING.md) - API endpoint documentation
 - [Integration Guide](client/INTEGRATION.md) - Frontend-backend integration
+- [Upload Feature Guide](client/UPLOAD_FEATURE.md) - Upload functionality *(NEW!)*
+- [Debugging Guide](server/DEBUGGING_GUIDE.md) - Troubleshooting
+- [Start Server Guide](server/START_SERVER.md) - Quick start instructions
 
-## What's New in Step 5
+## What's New in Step 6
 
-✅ **MongoDB Integration**
-- Mongoose models and schemas
-- Database connection configuration
-- MongoDB-powered API routes
-- Database seeding script
+✅ **Upload Page Implementation**
+- Complete upload form with validation
+- Real-time error display
+- Success/error notifications
+- Auto-redirect after upload
+- Loading states
 
-✅ **Improved Backend**
-- Async/await database operations
-- Mongoose validation
-- Virtual fields for compatibility
-- Better error handling
+✅ **Navigation Updates**
+- Added Upload link to navbar
+- React Router navigation
+- New `/upload` route
 
-✅ **No Frontend Changes**
-- Frontend works without modification
-- Same API responses as before
-- Seamless migration from JSON to MongoDB
-
-## Migration Notes
-
-### From JSON File to MongoDB
-
-**Before (Step 4):**
-- Data stored in `server/data/videos.json`
-- File read/write operations
-- No data validation
-- Limited scalability
-
-**After (Step 5):**
-- Data stored in MongoDB database
-- Mongoose ODM with validation
-- Schema enforcement
-- Production-ready scalability
-- Advanced querying capabilities
-
-**Frontend Impact:** None! The API responses are identical.
+✅ **API Integration**
+- POST request to create videos
+- Error handling
+- Success feedback
+- Immediate home page update
 
 ## Future Enhancements
 
 - [ ] User authentication with JWT
-- [ ] Video upload to cloud storage
+- [ ] File upload from local machine
+- [ ] Video upload to cloud storage (AWS S3/Cloudinary)
+- [ ] Thumbnail auto-generation
+- [ ] Video transcoding
 - [ ] Comments and ratings system
 - [ ] User playlists and watch history
-- [ ] Advanced search with MongoDB text indexes
-- [ ] Video recommendations algorithm
-- [ ] Analytics and view tracking
+- [ ] Advanced search with filters
 - [ ] Admin dashboard
+- [ ] Upload progress bar
+- [ ] Drag & drop upload
 
 ## License
 
 ISC
+
+---
+
+## Complete Feature List
+
+### Implemented ✅
+- Netflix-style homepage with carousels
+- Video player with HTML5 controls
+- Search functionality
+- MongoDB database integration
+- RESTful API
+- **Video upload feature** *(Step 6)*
+- Responsive design
+- Error handling
+- Loading states
+
+### In Progress 🚧
+- User authentication
+- Video upload to cloud storage
+
+### Planned 📋
+- Comments system
+- User playlists
+- Advanced search
+- Admin panel
