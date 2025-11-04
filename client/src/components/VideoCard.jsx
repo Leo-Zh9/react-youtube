@@ -1,13 +1,20 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const VideoCard = ({ video }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/watch/${video.id}`);
+  };
 
   return (
     <div
       className="relative group cursor-pointer transition-all duration-300 ease-in-out"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
     >
       {/* Video Thumbnail */}
       <div
@@ -89,4 +96,3 @@ const VideoCard = ({ video }) => {
 };
 
 export default VideoCard;
-
