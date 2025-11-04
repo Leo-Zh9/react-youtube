@@ -1,0 +1,27 @@
+{
+  "name": "react-youtube",
+  "version": "1.0.0",
+  "description": "YouTube functionality with Netflix UI",
+  "scripts": {
+    "install:client": "cd client && npm install",
+    "install:server": "cd server && npm install",
+    "install:all": "npm run install:client && npm run install:server",
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server"
+  },
+  "keywords": [
+    "react",
+    "youtube",
+    "netflix",
+    "video"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "swiper": "^12.0.3"
+  }
+}
