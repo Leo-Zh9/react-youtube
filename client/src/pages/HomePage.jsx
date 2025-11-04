@@ -1,17 +1,33 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import Carousel from '../components/Carousel';
-import {
-  featuredVideo,
-  trendingVideos,
-  newReleases,
-  topPicks,
-  watchAgain,
-} from '../data/mockData';
+import { getAllVideos } from '../services/api';
 
 const HomePage = () => {
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch videos from backend on component mount
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getAllVideos();
+        setVideos(data);
+      } catch (err) {
+        console.error('Failed to fetch videos:', err);
+        setError('Failed to load videos. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   // Handle search filtering
   const handleSearch = (query) => {
@@ -19,9 +35,9 @@ const HomePage = () => {
   };
 
   // Filter videos based on search query
-  const filterVideos = (videos) => {
-    if (!searchQuery) return videos;
-    return videos.filter(
+  const filterVideos = (videoList) => {
+    if (!searchQuery) return videoList;
+    return videoList.filter(
       (video) =>
         video.title.toLowerCase().includes(searchQuery) ||
         video.description.toLowerCase().includes(searchQuery) ||
@@ -29,11 +45,79 @@ const HomePage = () => {
     );
   };
 
+  // Organize videos by category
+  const videosByCategory = useMemo(() => {
+    if (!videos.length) return {};
+
+    const categories = {
+      featured: videos.find((v) => v.id === 'featured-1') || videos[0],
+      trending: videos.filter((v) => v.id.startsWith('trend-')),
+      newReleases: videos.filter((v) => v.id.startsWith('new-')),
+      topPicks: videos.filter((v) => v.id.startsWith('top-')),
+      watchAgain: videos.filter((v) => v.id.startsWith('watch-')),
+    };
+
+    return categories;
+  }, [videos]);
+
   // Memoize filtered results for performance
-  const filteredTrending = useMemo(() => filterVideos(trendingVideos), [searchQuery]);
-  const filteredNewReleases = useMemo(() => filterVideos(newReleases), [searchQuery]);
-  const filteredTopPicks = useMemo(() => filterVideos(topPicks), [searchQuery]);
-  const filteredWatchAgain = useMemo(() => filterVideos(watchAgain), [searchQuery]);
+  const filteredTrending = useMemo(
+    () => filterVideos(videosByCategory.trending || []),
+    [searchQuery, videosByCategory.trending]
+  );
+  const filteredNewReleases = useMemo(
+    () => filterVideos(videosByCategory.newReleases || []),
+    [searchQuery, videosByCategory.newReleases]
+  );
+  const filteredTopPicks = useMemo(
+    () => filterVideos(videosByCategory.topPicks || []),
+    [searchQuery, videosByCategory.topPicks]
+  );
+  const filteredWatchAgain = useMemo(
+    () => filterVideos(videosByCategory.watchAgain || []),
+    [searchQuery, videosByCategory.watchAgain]
+  );
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
+          <p className="text-white text-xl">Loading videos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <p className="text-white text-xl mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded font-semibold transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No videos state
+  if (!videos.length) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white text-xl">No videos available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black min-h-screen">
@@ -41,7 +125,7 @@ const HomePage = () => {
       <Navbar onSearch={handleSearch} />
 
       {/* Hero Section - Featured Video */}
-      <HeroSection featuredVideo={featuredVideo} />
+      <HeroSection featuredVideo={videosByCategory.featured} />
 
       {/* Video Carousels */}
       <div className="relative -mt-32 md:-mt-40 z-10 space-y-8 pb-12">
@@ -98,33 +182,81 @@ const HomePage = () => {
             <div>
               <h3 className="text-gray-400 font-semibold mb-3">Navigation</h3>
               <ul className="space-y-2 text-gray-500 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Home</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Upload</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">My List</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Upload
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    My List
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-gray-400 font-semibold mb-3">Support</h3>
               <ul className="space-y-2 text-gray-500 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    FAQ
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-gray-400 font-semibold mb-3">Legal</h3>
               <ul className="space-y-2 text-gray-500 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Cookie Policy
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-gray-400 font-semibold mb-3">Social</h3>
               <ul className="space-y-2 text-gray-500 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Instagram</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Facebook</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Twitter
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Instagram
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Facebook
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -140,4 +272,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

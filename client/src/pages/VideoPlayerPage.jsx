@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getVideoById, getRecommendedVideos } from '../data/mockData';
+import { getVideoById, getRecommendedVideos } from '../services/api';
 
 const VideoPlayerPage = () => {
   const { id } = useParams();
@@ -8,24 +8,33 @@ const VideoPlayerPage = () => {
   const [video, setVideo] = useState(null);
   const [recommendedVideos, setRecommendedVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate loading delay and fetch video data
-    setLoading(true);
-    window.scrollTo(0, 0); // Scroll to top when video changes
+    const fetchVideoData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        window.scrollTo(0, 0); // Scroll to top when video changes
 
-    setTimeout(() => {
-      const videoData = getVideoById(id);
-      if (videoData) {
+        // Fetch the main video and recommended videos
+        const [videoData, recommended] = await Promise.all([
+          getVideoById(id),
+          getRecommendedVideos(id, 12),
+        ]);
+
         setVideo(videoData);
-        setRecommendedVideos(getRecommendedVideos(id, 12));
-      } else {
-        // If video not found, redirect to home
-        navigate('/');
+        setRecommendedVideos(recommended);
+      } catch (err) {
+        console.error('Error fetching video:', err);
+        setError(err.message || 'Failed to load video');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500); // Simulate network delay
-  }, [id, navigate]);
+    };
+
+    fetchVideoData();
+  }, [id]);
 
   // Format upload date
   const formatDate = (dateString) => {
@@ -44,6 +53,24 @@ const VideoPlayerPage = () => {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
           <p className="text-white text-xl">Loading video...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <p className="text-white text-xl mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded font-semibold transition-colors"
+          >
+            Return to Home
+          </button>
         </div>
       </div>
     );
@@ -209,41 +236,45 @@ const VideoPlayerPage = () => {
             {/* Recommended Videos Sidebar - Takes 1 column on large screens */}
             <div className="lg:col-span-1">
               <h2 className="text-xl font-bold mb-4">Recommended Videos</h2>
-              <div className="space-y-4">
-                {recommendedVideos.map((recommendedVideo) => (
-                  <button
-                    key={recommendedVideo.id}
-                    onClick={() => navigate(`/watch/${recommendedVideo.id}`)}
-                    className="block w-full group text-left"
-                  >
-                    <div className="flex gap-3 hover:bg-gray-900 rounded-lg p-2 transition-all">
-                      {/* Thumbnail */}
-                      <div className="relative w-40 flex-shrink-0">
-                        <img
-                          src={recommendedVideo.thumbnail}
-                          alt={recommendedVideo.title}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-1.5 py-0.5 rounded">
-                          {recommendedVideo.duration}
+              {recommendedVideos.length > 0 ? (
+                <div className="space-y-4">
+                  {recommendedVideos.map((recommendedVideo) => (
+                    <button
+                      key={recommendedVideo.id}
+                      onClick={() => navigate(`/watch/${recommendedVideo.id}`)}
+                      className="block w-full group text-left"
+                    >
+                      <div className="flex gap-3 hover:bg-gray-900 rounded-lg p-2 transition-all">
+                        {/* Thumbnail */}
+                        <div className="relative w-40 flex-shrink-0">
+                          <img
+                            src={recommendedVideo.thumbnail}
+                            alt={recommendedVideo.title}
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-1.5 py-0.5 rounded">
+                            {recommendedVideo.duration}
+                          </div>
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-red-500 transition-colors">
+                            {recommendedVideo.title}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {recommendedVideo.category}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {recommendedVideo.views} views
+                          </p>
                         </div>
                       </div>
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-red-500 transition-colors">
-                          {recommendedVideo.title}
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {recommendedVideo.category}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {recommendedVideo.views} views
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">No recommendations available</p>
+              )}
             </div>
           </div>
         </div>
@@ -253,4 +284,3 @@ const VideoPlayerPage = () => {
 };
 
 export default VideoPlayerPage;
-

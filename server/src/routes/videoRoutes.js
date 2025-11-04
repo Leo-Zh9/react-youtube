@@ -1,47 +1,20 @@
 import express from 'express';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import Video from '../models/Video.js';
 
 const router = express.Router();
 
-// Get current directory (ES modules compatibility)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const videosFilePath = join(__dirname, '../../data/videos.json');
-
-// Helper function to read videos from JSON file
-const readVideos = () => {
-  try {
-    const data = readFileSync(videosFilePath, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading videos.json:', error);
-    return [];
-  }
-};
-
-// Helper function to write videos to JSON file
-const writeVideos = (videos) => {
-  try {
-    writeFileSync(videosFilePath, JSON.stringify(videos, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Error writing to videos.json:', error);
-    return false;
-  }
-};
-
 // GET /api/videos - Get all videos
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const videos = readVideos();
+    const videos = await Video.find().sort({ createdAt: -1 });
+    
     res.status(200).json({
       success: true,
       count: videos.length,
       data: videos,
     });
   } catch (error) {
+    console.error('Error fetching videos:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching videos',
@@ -50,11 +23,10 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /api/videos/:id - Get single video by ID
-router.get('/:id', (req, res) => {
+// GET /api/videos/:id - Get single video by custom ID
+router.get('/:id', async (req, res) => {
   try {
-    const videos = readVideos();
-    const video = videos.find((v) => v.id === req.params.id);
+    const video = await Video.findOne({ id: req.params.id });
 
     if (!video) {
       return res.status(404).json({
@@ -68,6 +40,7 @@ router.get('/:id', (req, res) => {
       data: video,
     });
   } catch (error) {
+    console.error('Error fetching video:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching video',
@@ -76,113 +49,128 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST /api/videos - Add a new video (Admin functionality)
-router.post('/', (req, res) => {
+// POST /api/videos - Create a new video
+router.post('/', async (req, res) => {
   try {
     const {
       id,
       title,
       description,
       thumbnail,
-      videoUrl,
+      url,
+      videoUrl, // Support both 'url' and 'videoUrl' for compatibility
       duration,
       views,
       category,
       year,
       rating,
+      uploadDate,
     } = req.body;
 
     // Validate required fields
-    if (!id || !title || !description || !thumbnail || !videoUrl) {
+    if (!title || (!url && !videoUrl)) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: id, title, description, thumbnail, videoUrl',
+        message: 'Missing required fields: title and url are required',
       });
     }
 
-    const videos = readVideos();
-
     // Check if video with same ID already exists
-    if (videos.find((v) => v.id === id)) {
-      return res.status(400).json({
-        success: false,
-        message: `Video with ID '${id}' already exists`,
-      });
+    if (id) {
+      const existingVideo = await Video.findOne({ id });
+      if (existingVideo) {
+        return res.status(400).json({
+          success: false,
+          message: `Video with ID '${id}' already exists`,
+        });
+      }
     }
 
     // Create new video object
-    const newVideo = {
-      id,
+    const videoData = {
+      id: id || `video-${Date.now()}`, // Generate ID if not provided
       title,
       description,
       thumbnail,
-      videoUrl,
-      duration: duration || '0:00',
-      views: views || '0',
-      category: category || 'Uncategorized',
-      year: year || new Date().getFullYear().toString(),
-      rating: rating || 'G',
-      uploadDate: new Date().toISOString().split('T')[0],
+      url: url || videoUrl, // Use 'url' or fallback to 'videoUrl'
+      duration,
+      views,
+      category,
+      year,
+      rating,
+      uploadDate,
     };
 
-    // Add to videos array
-    videos.push(newVideo);
+    const video = await Video.create(videoData);
 
-    // Write back to file
-    if (writeVideos(videos)) {
-      res.status(201).json({
-        success: true,
-        message: 'Video added successfully',
-        data: newVideo,
-      });
-    } else {
-      res.status(500).json({
+    res.status(201).json({
+      success: true,
+      message: 'Video created successfully',
+      data: video,
+    });
+  } catch (error) {
+    console.error('Error creating video:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
         success: false,
-        message: 'Error saving video',
+        message: 'Validation error',
+        error: error.message,
       });
     }
-  } catch (error) {
+
     res.status(500).json({
       success: false,
-      message: 'Error adding video',
+      message: 'Error creating video',
       error: error.message,
     });
   }
 });
 
-// PUT /api/videos/:id - Update a video (Admin functionality)
-router.put('/:id', (req, res) => {
+// PUT /api/videos/:id - Update a video
+router.put('/:id', async (req, res) => {
   try {
-    const videos = readVideos();
-    const videoIndex = videos.findIndex((v) => v.id === req.params.id);
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    
+    // Don't allow updating the custom ID
+    delete updateData.id;
+    
+    // Support both 'url' and 'videoUrl'
+    if (updateData.videoUrl && !updateData.url) {
+      updateData.url = updateData.videoUrl;
+    }
 
-    if (videoIndex === -1) {
+    const video = await Video.findOneAndUpdate(
+      { id },
+      { ...updateData, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+
+    if (!video) {
       return res.status(404).json({
         success: false,
-        message: `Video with ID '${req.params.id}' not found`,
+        message: `Video with ID '${id}' not found`,
       });
     }
 
-    // Update video with new data (merge with existing)
-    videos[videoIndex] = {
-      ...videos[videoIndex],
-      ...req.body,
-      id: req.params.id, // Ensure ID doesn't change
-    };
-
-    if (writeVideos(videos)) {
-      res.status(200).json({
-        success: true,
-        message: 'Video updated successfully',
-        data: videos[videoIndex],
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error updating video',
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: 'Video updated successfully',
+      data: video,
+    });
   } catch (error) {
+    console.error('Error updating video:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: error.message,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Error updating video',
@@ -191,34 +179,25 @@ router.put('/:id', (req, res) => {
   }
 });
 
-// DELETE /api/videos/:id - Delete a video (Admin functionality)
-router.delete('/:id', (req, res) => {
+// DELETE /api/videos/:id - Delete a video
+router.delete('/:id', async (req, res) => {
   try {
-    const videos = readVideos();
-    const videoIndex = videos.findIndex((v) => v.id === req.params.id);
+    const video = await Video.findOneAndDelete({ id: req.params.id });
 
-    if (videoIndex === -1) {
+    if (!video) {
       return res.status(404).json({
         success: false,
         message: `Video with ID '${req.params.id}' not found`,
       });
     }
 
-    const deletedVideo = videos.splice(videoIndex, 1)[0];
-
-    if (writeVideos(videos)) {
-      res.status(200).json({
-        success: true,
-        message: 'Video deleted successfully',
-        data: deletedVideo,
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error deleting video',
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: 'Video deleted successfully',
+      data: video,
+    });
   } catch (error) {
+    console.error('Error deleting video:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting video',
@@ -228,4 +207,3 @@ router.delete('/:id', (req, res) => {
 });
 
 export default router;
-

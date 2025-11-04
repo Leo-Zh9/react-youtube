@@ -1,13 +1,18 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import connectDB from './config/database.js';
 import videoRoutes from './routes/videoRoutes.js';
+
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(cors({
@@ -29,6 +34,7 @@ app.get('/', (req, res) => {
     message: 'React YouTube API Server',
     status: 'OK',
     timestamp: new Date().toISOString(),
+    database: 'MongoDB',
     endpoints: {
       videos: '/api/videos',
       health: '/api/health',
@@ -42,10 +48,11 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    database: 'MongoDB',
   });
 });
 
-// Video routes
+// Video routes - MongoDB powered
 app.use('/api/videos', videoRoutes);
 
 // 404 handler
@@ -76,7 +83,8 @@ app.listen(PORT, () => {
   console.log(`   - POST   http://localhost:${PORT}/api/videos`);
   console.log(`   - PUT    http://localhost:${PORT}/api/videos/:id`);
   console.log(`   - DELETE http://localhost:${PORT}/api/videos/:id`);
-  console.log(`\n✨ CORS enabled for http://localhost:5173\n`);
+  console.log(`\n🗄️  Database: MongoDB`);
+  console.log(`✨ CORS enabled for http://localhost:5173\n`);
 });
 
 export default app;
