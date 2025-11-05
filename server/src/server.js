@@ -1,18 +1,26 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import connectDB from './config/database.js';
-import videoRoutes from './routes/videoRoutes.js';
 
-
-// Load environment variables
+// Load environment variables FIRST before any other imports
 dotenv.config();
+
+// Now import modules that depend on environment variables
+import connectDB from './config/database.js';
+import { initializeS3 } from './config/aws.js';
+import videoRoutes from './routes/videoRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-connectDB();
+// Initialize AWS S3 configuration
+initializeS3();
+
+// Connect to MongoDB (non-blocking)
+connectDB().catch(err => {
+  console.log('⚠️  MongoDB connection failed, but server will continue running');
+});
 
 // Middleware
 app.use(cors({
@@ -54,6 +62,9 @@ app.get('/api/health', (req, res) => {
 
 // Video routes - MongoDB powered
 app.use('/api/videos', videoRoutes);
+
+// Upload routes - S3 file upload
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {
