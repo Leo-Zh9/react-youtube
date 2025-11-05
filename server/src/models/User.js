@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -17,6 +18,14 @@ const userSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false,
+  },
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
   },
   createdAt: {
     type: Date,
@@ -53,6 +62,24 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   } catch (error) {
     return false;
   }
+};
+
+// Method to generate password reset token
+userSchema.methods.generatePasswordResetToken = function () {
+  // Generate random token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  // Set expire time (15 minutes)
+  this.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+  
+  // Return unhashed token (to send via email)
+  return resetToken;
 };
 
 // Remove password from JSON output
