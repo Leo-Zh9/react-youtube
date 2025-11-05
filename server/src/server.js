@@ -54,27 +54,33 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS middleware - Allow frontend from environment variable
 const allowedOrigins = [
-  'http://localhost:5173',  // Local Vite dev server
-  'http://localhost:3000',  // Alternative local port
-  process.env.FRONTEND_URL, // Production frontend URL (Vercel)
-].filter(Boolean); // Remove undefined values
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL, // Production frontend URL
+].filter(Boolean);
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`⚠️  CORS blocked request from: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow no-origin requests (Postman, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      // ✅ Allow your exact URL and any Vercel preview URL
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app");
+
+      if (isAllowed) callback(null, true);
+      else {
+        console.warn(`⚠️  CORS blocked request from: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 
 // Body parsing middleware
