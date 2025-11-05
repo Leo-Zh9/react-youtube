@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import Carousel from '../components/Carousel';
+import VideoCard from '../components/VideoCard';
 import { getAllVideos, getNewReleases } from '../services/api';
 
 const HomePage = () => {
@@ -86,15 +87,27 @@ const HomePage = () => {
     );
   };
 
+  // Helper to parse view counts
+  const parseViews = (viewsString) => {
+    if (!viewsString) return 0;
+    if (viewsString.endsWith('M')) return parseFloat(viewsString) * 1000000;
+    if (viewsString.endsWith('K')) return parseFloat(viewsString) * 1000;
+    return parseInt(viewsString) || 0;
+  };
+
   // Organize videos by category
   const videosByCategory = useMemo(() => {
     if (!videos.length) return {};
 
+    // Sort videos by views for trending
+    const sortedByViews = [...videos].sort((a, b) => {
+      return parseViews(b.views) - parseViews(a.views);
+    });
+
     const categories = {
-      featured: videos.find((v) => v.id === 'featured-1') || videos[0],
-      trending: videos.filter((v) => v.id?.startsWith('trend-')),
-      topPicks: videos.filter((v) => v.id?.startsWith('top-')),
-      watchAgain: videos.filter((v) => v.id?.startsWith('watch-')),
+      featured: videos[0], // First video as featured
+      trending: sortedByViews.slice(0, 10), // Top 10 most viewed
+      allVideos: videos, // All videos for grid display
     };
 
     return categories;
@@ -109,13 +122,9 @@ const HomePage = () => {
     () => filterVideos(newReleases),
     [searchQuery, newReleases]
   );
-  const filteredTopPicks = useMemo(
-    () => filterVideos(videosByCategory.topPicks || []),
-    [searchQuery, videosByCategory.topPicks]
-  );
-  const filteredWatchAgain = useMemo(
-    () => filterVideos(videosByCategory.watchAgain || []),
-    [searchQuery, videosByCategory.watchAgain]
+  const filteredAllVideos = useMemo(
+    () => filterVideos(videosByCategory.allVideos || []),
+    [searchQuery, videosByCategory.allVideos]
   );
 
   // Loading state
@@ -215,12 +224,12 @@ const HomePage = () => {
 
         {/* Trending Now */}
         {filteredTrending.length > 0 && (
-          <Carousel title="Trending Now" videos={filteredTrending} />
+          <Carousel title="Trending Now" videos={filteredTrending} uniqueId="trending" />
         )}
 
         {/* New Releases - From API */}
         {!newReleasesLoading && !newReleasesError && filteredNewReleases.length > 0 && (
-          <Carousel title="New Releases" videos={filteredNewReleases} />
+          <Carousel title="New Releases" videos={filteredNewReleases} uniqueId="new-releases" />
         )}
         
         {/* New Releases Loading State */}
@@ -260,22 +269,25 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Top Picks for You */}
-        {filteredTopPicks.length > 0 && (
-          <Carousel title="Top Picks for You" videos={filteredTopPicks} />
-        )}
-
-        {/* Watch Again */}
-        {filteredWatchAgain.length > 0 && (
-          <Carousel title="Watch Again" videos={filteredWatchAgain} />
+        {/* All Videos Grid - YouTube Style */}
+        {!searchQuery && filteredAllVideos.length > 0 && (
+          <div className="px-4 md:px-8 lg:px-12 mt-12">
+            <h2 className="text-xl md:text-2xl font-semibold text-white mb-6 tracking-wide">
+              Browse All Videos
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredAllVideos.map((video) => (
+                <VideoCard key={video.id || video._id} video={video} />
+              ))}
+            </div>
+          </div>
         )}
 
         {/* No results message */}
         {searchQuery &&
           filteredTrending.length === 0 &&
           filteredNewReleases.length === 0 &&
-          filteredTopPicks.length === 0 &&
-          filteredWatchAgain.length === 0 && (
+          filteredAllVideos.length === 0 && (
             <div className="px-4 md:px-8 lg:px-12 text-center py-20">
               <p className="text-gray-400 text-xl">
                 No videos found for "{searchQuery}"

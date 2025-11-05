@@ -7,7 +7,11 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const Carousel = ({ title, videos }) => {
+const Carousel = ({ title, videos, uniqueId = 'default' }) => {
+  // Generate unique class names for this carousel instance to prevent conflicts
+  const prevClass = `swiper-button-prev-${uniqueId}`;
+  const nextClass = `swiper-button-next-${uniqueId}`;
+
   return (
     <div className="mb-12 md:mb-16">
       {/* Section Title */}
@@ -22,8 +26,8 @@ const Carousel = ({ title, videos }) => {
           spaceBetween={12}
           slidesPerView={2}
           navigation={{
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
+            nextEl: `.${nextClass}`,
+            prevEl: `.${prevClass}`,
           }}
           breakpoints={{
             640: {
@@ -46,14 +50,14 @@ const Carousel = ({ title, videos }) => {
           className="mySwiper"
         >
           {videos.map((video) => (
-            <SwiperSlide key={video.id}>
+            <SwiperSlide key={video.id || video._id}>
               <VideoCard video={video} />
             </SwiperSlide>
           ))}
         </Swiper>
 
-        {/* Custom Navigation Buttons - Netflix Style */}
-        <div className="swiper-button-prev absolute left-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16">
+        {/* Custom Navigation Buttons - Netflix Style - Unique per carousel */}
+        <div className={`${prevClass} absolute left-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16`}>
           <svg
             className="w-10 h-10 text-white drop-shadow-lg"
             fill="currentColor"
@@ -62,7 +66,7 @@ const Carousel = ({ title, videos }) => {
             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </div>
-        <div className="swiper-button-next absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16">
+        <div className={`${nextClass} absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16`}>
           <svg
             className="w-10 h-10 text-white drop-shadow-lg"
             fill="currentColor"
@@ -77,4 +81,3 @@ const Carousel = ({ title, videos }) => {
 };
 
 export default Carousel;
-
