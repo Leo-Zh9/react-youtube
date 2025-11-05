@@ -1,10 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isAuthenticated, getUser, logout } from '../services/authService';
 
 const Navbar = ({ onSearch }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Check authentication status
+  useEffect(() => {
+    setLoggedIn(isAuthenticated());
+    setUser(getUser());
+  }, []);
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    setLoggedIn(false);
+    setUser(null);
+    setShowUserMenu(false);
+    navigate('/');
+  };
 
   // Handle scroll effect for navbar background
   useState(() => {
@@ -50,12 +69,14 @@ const Navbar = ({ onSearch }) => {
             >
               Home
             </button>
-            <button
-              onClick={() => navigate('/upload')}
-              className="text-white hover:text-gray-300 transition-colors font-medium"
-            >
-              Upload
-            </button>
+            {loggedIn && (
+              <button
+                onClick={() => navigate('/upload')}
+                className="text-white hover:text-gray-300 transition-colors font-medium"
+              >
+                Upload
+              </button>
+            )}
             <button
               onClick={() => navigate('/mylist')}
               className="text-white hover:text-gray-300 transition-colors font-medium"
@@ -65,7 +86,7 @@ const Navbar = ({ onSearch }) => {
           </div>
         </div>
 
-        {/* Right side - Search and Profile */}
+        {/* Right side - Search and Auth */}
         <div className="flex items-center space-x-4">
           {/* Search Bar */}
           <div className="relative">
@@ -91,20 +112,71 @@ const Navbar = ({ onSearch }) => {
             </svg>
           </div>
 
-          {/* Profile Icon */}
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-red-600 rounded flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors">
-            <svg
-              className="w-5 h-5 md:w-6 md:h-6 text-white"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
+          {/* Auth Section */}
+          {loggedIn ? (
+            // Logged in - Show user menu
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-8 h-8 md:w-10 md:h-10 bg-red-600 rounded flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 md:w-6 md:h-6 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-lg shadow-xl border border-gray-800 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-800">
+                    <p className="text-sm text-gray-400">Signed in as</p>
+                    <p className="text-sm text-white font-semibold truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/upload');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 transition-colors"
+                  >
+                    Upload Video
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-800 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Not logged in - Show login/register buttons
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => navigate('/login')}
+                className="text-white hover:text-gray-300 transition-colors font-medium text-sm px-4 py-2"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-4 py-2 rounded transition-colors"
+              >
+                Register
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>

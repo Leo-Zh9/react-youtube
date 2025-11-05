@@ -10,6 +10,7 @@ import connectDB from './config/database.js';
 import { initializeS3 } from './config/aws.js';
 import videoRoutes from './routes/videoRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -60,10 +61,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Auth routes - User authentication
+app.use('/api/auth', authRoutes);
+
 // Video routes - MongoDB powered
 app.use('/api/videos', videoRoutes);
 
-// Upload routes - S3 file upload
+// Upload routes - S3 file upload (Protected)
 app.use('/api/upload', uploadRoutes);
 
 // 404 handler

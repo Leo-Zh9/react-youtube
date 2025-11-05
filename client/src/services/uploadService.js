@@ -1,5 +1,7 @@
 // Service for handling file uploads to S3 via backend
 
+import { getToken } from './authService';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
 /**
@@ -12,6 +14,12 @@ const API_BASE_URL = 'http://localhost:5000/api';
  */
 export const uploadVideoFile = async (videoFile, metadata, thumbnailFile = null, onProgress = null) => {
   try {
+    // Get auth token
+    const token = getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please login.');
+    }
+
     // Create FormData object
     const formData = new FormData();
     
@@ -33,6 +41,10 @@ export const uploadVideoFile = async (videoFile, metadata, thumbnailFile = null,
     // Create XMLHttpRequest for progress tracking
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+
+      // Set Authorization header
+      xhr.open('POST', `${API_BASE_URL}/upload`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
       // Track upload progress
       if (onProgress) {
@@ -65,7 +77,6 @@ export const uploadVideoFile = async (videoFile, metadata, thumbnailFile = null,
       });
 
       // Send request
-      xhr.open('POST', `${API_BASE_URL}/upload`);
       xhr.send(formData);
     });
   } catch (error) {

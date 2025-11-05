@@ -1,11 +1,12 @@
 import express from 'express';
 import { getUploadMiddleware, isS3Configured } from '../config/aws.js';
 import Video from '../models/Video.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// POST /api/upload - Upload video file to S3 and save metadata to MongoDB
-router.post('/', async (req, res) => {
+// POST /api/upload - Upload video file to S3 and save metadata to MongoDB (Protected)
+router.post('/', authenticateToken, async (req, res) => {
   // Check if S3 is configured
   if (!isS3Configured()) {
     return res.status(503).json({
@@ -76,7 +77,7 @@ router.post('/', async (req, res) => {
       // Generate unique ID
       const videoId = `user-${Date.now()}`;
 
-      // Create video document
+      // Create video document with owner
       const videoData = {
         id: videoId,
         title: title.trim(),
@@ -89,12 +90,13 @@ router.post('/', async (req, res) => {
         views: '0',
         year: new Date().getFullYear().toString(),
         uploadDate: new Date().toISOString().split('T')[0],
+        owner: req.user.userId, // Set owner from authenticated user
       };
 
       // Save to MongoDB
       const video = await Video.create(videoData);
 
-      console.log('✅ Video uploaded to S3 and saved to MongoDB:', videoId);
+      console.log(`✅ Video uploaded to S3 by ${req.user.email}: ${title}`);
 
       // Return success response
       res.status(201).json({

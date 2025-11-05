@@ -1,5 +1,7 @@
 // API service for fetching video data from the backend
 
+import { getAuthHeader } from './authService';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Helper function to handle API errors
@@ -56,13 +58,14 @@ export const getVideoById = async (id) => {
   }
 };
 
-// Add new video (Admin functionality)
+// Add new video (Requires authentication)
 export const addVideo = async (videoData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/videos`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(), // Add Authorization header
       },
       body: JSON.stringify(videoData),
     });

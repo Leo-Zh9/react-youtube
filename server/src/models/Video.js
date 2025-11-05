@@ -55,6 +55,11 @@ const videoSchema = new mongoose.Schema({
     type: String,
     default: () => new Date().toISOString().split('T')[0],
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

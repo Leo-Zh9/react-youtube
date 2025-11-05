@@ -1,5 +1,6 @@
 import express from 'express';
 import Video from '../models/Video.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -180,8 +181,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/videos - Create a new video
-router.post('/', async (req, res) => {
+// POST /api/videos - Create a new video (Protected - requires authentication)
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const {
       id,
