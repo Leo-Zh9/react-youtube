@@ -90,6 +90,29 @@ const UploadPage = () => {
         [name]: file,
       }));
 
+      // Auto-detect video duration
+      if (name === 'video') {
+        const videoElement = document.createElement('video');
+        videoElement.preload = 'metadata';
+        
+        videoElement.onloadedmetadata = function() {
+          window.URL.revokeObjectURL(videoElement.src);
+          const duration = Math.floor(videoElement.duration);
+          const minutes = Math.floor(duration / 60);
+          const seconds = duration % 60;
+          const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          setFormData(prev => ({
+            ...prev,
+            duration: formattedDuration,
+          }));
+          
+          console.log(`📹 Auto-detected duration: ${formattedDuration}`);
+        };
+        
+        videoElement.src = URL.createObjectURL(file);
+      }
+
       // Clear any previous errors
       setValidationErrors(prev => ({
         ...prev,
@@ -198,14 +221,14 @@ const UploadPage = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gradient-to-b from-black to-gray-900 border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+      <div className="border-b border-gray-900">
+        <div className="max-w-5xl mx-auto px-6 md:px-8 py-6">
           <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors mb-6"
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2 text-gray-500 hover:text-white transition-colors mb-4 group"
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -217,35 +240,35 @@ const UploadPage = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            <span>Back to Home</span>
+            <span className="text-sm">Back</span>
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-semibold mb-1 tracking-tight">
             Upload Video
           </h1>
-          <p className="text-gray-400">
-            Upload your video file to AWS S3
+          <p className="text-sm text-gray-500">
+            Share your content with the world
           </p>
         </div>
       </div>
 
       {/* Upload Form */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-6 md:px-8 py-8">
         {/* S3 Not Configured Warning */}
         {!s3Configured && (
-          <div className="bg-yellow-900 bg-opacity-50 border border-yellow-500 text-yellow-200 px-6 py-4 rounded-lg mb-6">
-            <p className="font-semibold">⚠️ AWS S3 Not Configured</p>
-            <p className="text-sm">
-              Please configure AWS credentials in the backend .env file to enable file uploads.
+          <div className="bg-gray-900 border-l-4 border-white px-6 py-4 mb-6">
+            <p className="font-semibold text-white mb-1">Configuration Required</p>
+            <p className="text-sm text-gray-400">
+              AWS S3 credentials must be configured in the backend to enable uploads.
             </p>
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="bg-green-900 bg-opacity-50 border border-green-500 text-green-200 px-6 py-4 rounded-lg mb-6 flex items-center">
+          <div className="bg-gray-900 border-l-4 border-white px-6 py-4 mb-6 flex items-center">
             <svg
-              className="w-6 h-6 mr-3 flex-shrink-0"
+              className="w-5 h-5 mr-3 flex-shrink-0 text-white"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -256,19 +279,19 @@ const UploadPage = () => {
               />
             </svg>
             <div>
-              <p className="font-semibold">
-                Video uploaded to S3 successfully!
+              <p className="font-semibold text-white">
+                Upload successful
               </p>
-              <p className="text-sm">Redirecting to home page...</p>
+              <p className="text-sm text-gray-400">Redirecting...</p>
             </div>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-900 bg-opacity-50 border border-red-500 text-red-200 px-6 py-4 rounded-lg mb-6 flex items-center">
+          <div className="bg-gray-900 border-l-4 border-white px-6 py-4 mb-6 flex items-center">
             <svg
-              className="w-6 h-6 mr-3 flex-shrink-0"
+              className="w-5 h-5 mr-3 flex-shrink-0 text-white"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -279,43 +302,42 @@ const UploadPage = () => {
               />
             </svg>
             <div>
-              <p className="font-semibold">Upload failed</p>
-              <p className="text-sm">{error}</p>
+              <p className="font-semibold text-white">{error}</p>
             </div>
           </div>
         )}
 
         {/* Upload Progress */}
         {loading && uploadProgress > 0 && (
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold">
-                Uploading to AWS S3...
+          <div className="bg-gray-950 border border-gray-800 p-6 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white">
+                Uploading...
               </span>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-gray-400 font-mono">
                 {uploadProgress}%
               </span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-3">
+            <div className="w-full bg-gray-900 h-1">
               <div
-                className="bg-red-600 h-3 rounded-full transition-all duration-300"
+                className="bg-white h-1 transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Please don't close this page...
+            <p className="text-xs text-gray-600 mt-3">
+              Do not close this window
             </p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Video File Upload - Required */}
           <div>
             <label
               htmlFor="video"
-              className="block text-sm font-semibold mb-2"
+              className="block text-sm font-medium text-gray-400 mb-3"
             >
-              Video File <span className="text-red-500">*</span>
+              Video File <span className="text-white">*</span>
             </label>
             <div className="relative">
               <input
@@ -329,18 +351,20 @@ const UploadPage = () => {
               />
               <label
                 htmlFor="video"
-                className={`block w-full bg-gray-900 border ${
+                className={`block w-full bg-gray-950 border-2 ${
                   validationErrors.video
-                    ? 'border-red-500'
-                    : 'border-gray-700'
-                } rounded-lg px-4 py-8 text-center cursor-pointer hover:border-red-500 transition-colors ${
+                    ? 'border-white'
+                    : files.video
+                    ? 'border-gray-700'
+                    : 'border-gray-800'
+                } hover:border-gray-600 transition-all px-6 py-10 text-center cursor-pointer ${
                   loading || success ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {files.video ? (
                   <div>
                     <svg
-                      className="w-12 h-12 mx-auto mb-2 text-green-500"
+                      className="w-10 h-10 mx-auto mb-3 text-white"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -350,33 +374,33 @@ const UploadPage = () => {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <p className="text-white font-medium">
+                    <p className="text-white font-medium text-sm">
                       {files.video.name}
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-xs text-gray-600 mt-1.5">
                       {formatFileSize(files.video.size)}
                     </p>
                   </div>
                 ) : (
                   <div>
                     <svg
-                      className="w-12 h-12 mx-auto mb-2 text-gray-500"
+                      className="w-10 h-10 mx-auto mb-3 text-gray-700"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      strokeWidth={1.5}
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                       />
                     </svg>
-                    <p className="text-gray-400">
-                      Click to select video file
+                    <p className="text-gray-400 text-sm font-medium">
+                      Select video file
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      MP4, WebM, AVI, etc. (Max 500MB)
+                    <p className="text-xs text-gray-600 mt-1.5">
+                      MP4, WebM, AVI • Max 500MB
                     </p>
                   </div>
                 )}
@@ -393,9 +417,12 @@ const UploadPage = () => {
           <div>
             <label
               htmlFor="thumbnail"
-              className="block text-sm font-semibold mb-2"
+              className="block text-sm font-medium text-gray-400 mb-3"
             >
-              Thumbnail Image (Optional)
+              Thumbnail
+              <span className="text-gray-600 font-normal ml-2 text-xs">
+                (Optional - Default will be used if not provided)
+              </span>
             </label>
             <div className="relative">
               <input
@@ -409,11 +436,13 @@ const UploadPage = () => {
               />
               <label
                 htmlFor="thumbnail"
-                className={`block w-full bg-gray-900 border ${
+                className={`block w-full bg-gray-950 border-2 ${
                   validationErrors.thumbnail
-                    ? 'border-red-500'
-                    : 'border-gray-700'
-                } rounded-lg px-4 py-6 text-center cursor-pointer hover:border-red-500 transition-colors ${
+                    ? 'border-white'
+                    : files.thumbnail
+                    ? 'border-gray-700'
+                    : 'border-gray-800'
+                } hover:border-gray-600 transition-all px-6 py-8 text-center cursor-pointer ${
                   loading || success ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -422,13 +451,13 @@ const UploadPage = () => {
                     <img
                       src={URL.createObjectURL(files.thumbnail)}
                       alt="Thumbnail preview"
-                      className="w-32 h-20 object-cover rounded"
+                      className="w-32 h-20 object-cover border border-gray-800"
                     />
                     <div className="text-left">
-                      <p className="text-white font-medium">
+                      <p className="text-white font-medium text-sm">
                         {files.thumbnail.name}
                       </p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-xs text-gray-600">
                         {formatFileSize(files.thumbnail.size)}
                       </p>
                     </div>
@@ -436,23 +465,23 @@ const UploadPage = () => {
                 ) : (
                   <div>
                     <svg
-                      className="w-8 h-8 mx-auto mb-2 text-gray-500"
+                      className="w-8 h-8 mx-auto mb-3 text-gray-700"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      strokeWidth={1.5}
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <p className="text-gray-400 text-sm">
-                      Click to select thumbnail
+                    <p className="text-gray-400 text-sm font-medium">
+                      Select thumbnail image
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      JPG, PNG, etc. (Max 10MB)
+                    <p className="text-xs text-gray-600 mt-1.5">
+                      JPG, PNG • Max 10MB
                     </p>
                   </div>
                 )}
@@ -469,9 +498,9 @@ const UploadPage = () => {
           <div>
             <label
               htmlFor="title"
-              className="block text-sm font-semibold mb-2"
+              className="block text-sm font-medium text-gray-400 mb-3"
             >
-              Title <span className="text-red-500">*</span>
+              Title <span className="text-white">*</span>
             </label>
             <input
               type="text"
@@ -480,15 +509,15 @@ const UploadPage = () => {
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter video title"
-              className={`w-full bg-gray-900 border ${
+              className={`w-full bg-black border ${
                 validationErrors.title
-                  ? 'border-red-500'
-                  : 'border-gray-700'
-              } rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors`}
+                  ? 'border-white'
+                  : 'border-gray-800'
+              } px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all`}
               disabled={loading || success}
             />
             {validationErrors.title && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-white text-xs mt-2">
                 {validationErrors.title}
               </p>
             )}
@@ -498,7 +527,7 @@ const UploadPage = () => {
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-semibold mb-2"
+              className="block text-sm font-medium text-gray-400 mb-3"
             >
               Description
             </label>
@@ -507,9 +536,9 @@ const UploadPage = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Tell viewers about your video"
+              placeholder="Describe your video"
               rows={4}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors resize-none"
+              className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all resize-none"
               disabled={loading || success}
             />
           </div>
@@ -547,23 +576,27 @@ const UploadPage = () => {
               </select>
             </div>
 
-            {/* Duration */}
+            {/* Duration - Auto-detected */}
             <div>
               <label
                 htmlFor="duration"
-                className="block text-sm font-semibold mb-2"
+                className="block text-sm font-medium text-gray-400 mb-3"
               >
                 Duration
+                {formData.duration && (
+                  <span className="text-white font-normal ml-2 text-xs">
+                    ✓
+                  </span>
+                )}
               </label>
               <input
                 type="text"
                 id="duration"
                 name="duration"
                 value={formData.duration}
-                onChange={handleChange}
-                placeholder="12:34"
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
-                disabled={loading || success}
+                readOnly
+                placeholder="Auto-detected"
+                className="w-full bg-gray-900 border border-gray-800 px-4 py-3 text-gray-500 placeholder-gray-700 cursor-not-allowed"
               />
             </div>
 
@@ -571,7 +604,7 @@ const UploadPage = () => {
             <div>
               <label
                 htmlFor="rating"
-                className="block text-sm font-semibold mb-2"
+                className="block text-sm font-medium text-gray-400 mb-3"
               >
                 Rating
               </label>
@@ -580,7 +613,7 @@ const UploadPage = () => {
                 name="rating"
                 value={formData.rating}
                 onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white focus:outline-none focus:border-white focus:bg-gray-950 transition-all cursor-pointer"
                 disabled={loading || success}
               >
                 <option value="G">G - General Audience</option>
@@ -652,7 +685,7 @@ const UploadPage = () => {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  Upload to S3
+                  <span>Publish</span>
                 </>
               )}
             </button>

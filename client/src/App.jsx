@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import UploadPage from './pages/UploadPage';
+import UploadsPage from './pages/UploadsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PlaylistsPage from './pages/PlaylistsPage';
@@ -30,15 +31,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/playlists"
-              element={
-                <ProtectedRoute>
-                  <PlaylistsPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <Route
+            path="/playlists"
+            element={
+              <ProtectedRoute>
+                <PlaylistsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/uploads"
+            element={
+              <ProtectedRoute>
+                <UploadsPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
         </div>
       </ErrorBoundary>
     </Router>

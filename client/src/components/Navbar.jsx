@@ -60,6 +60,20 @@ const Navbar = ({ onSearch }) => {
     }
   };
 
+  // Scroll to top of page
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  // Handle home navigation with scroll to top
+  const handleHomeClick = () => {
+    navigate('/');
+    setTimeout(() => scrollToTop(), 100); // Small delay to ensure navigation completes
+  };
+
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
@@ -70,24 +84,26 @@ const Navbar = ({ onSearch }) => {
         {/* Left side - Logo and Navigation */}
         <div className="flex items-center space-x-8">
           {/* Netflix-style Logo */}
-          <div className="text-red-600 font-bold text-2xl md:text-3xl tracking-tight">
+          <div className="text-white font-bold text-2xl md:text-3xl tracking-tight hover:text-gray-300 transition-colors cursor-pointer" onClick={handleHomeClick}>
             REACTFLIX
           </div>
 
           {/* Navigation Links */}
           <div className="hidden md:flex space-x-6">
             <button
-              onClick={() => navigate('/')}
+              onClick={handleHomeClick}
               className="text-white hover:text-gray-300 transition-colors font-medium"
             >
               Home
             </button>
-            <button
-              onClick={() => navigate(loggedIn ? '/upload' : '/login')}
-              className="text-white hover:text-gray-300 transition-colors font-medium"
-            >
-              Upload
-            </button>
+            {loggedIn && (
+              <button
+                onClick={() => navigate('/uploads')}
+                className="text-white hover:text-gray-300 transition-colors font-medium"
+              >
+                My Uploads
+              </button>
+            )}
             {loggedIn && (
               <button
                 onClick={() => navigate('/playlists')}
@@ -109,11 +125,11 @@ const Navbar = ({ onSearch }) => {
               value={searchQuery}
               onChange={handleSearchChange}
               onKeyDown={handleSearchKeyDown}
-              className="bg-black bg-opacity-70 border border-gray-700 text-white px-4 py-2 pr-10 rounded w-48 md:w-64 focus:outline-none focus:border-white transition-all"
+              className="bg-black border border-gray-800 text-white px-4 py-2 pr-10 rounded w-48 md:w-64 focus:outline-none focus:border-white focus:bg-gray-900 transition-all placeholder-gray-500"
             />
             <button
               type="submit"
-              className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors"
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-white transition-colors"
             >
               <svg
                 className="w-5 h-5"

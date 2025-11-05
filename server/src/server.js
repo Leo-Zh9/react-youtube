@@ -16,6 +16,7 @@ import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import playlistRoutes from './routes/playlistRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
+import statsRoutes from './routes/statsRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 
@@ -105,6 +106,9 @@ app.use('/api', commentRoutes);
 
 // Playlist routes - User playlists (Protected)
 app.use('/api/playlists', playlistRoutes);
+
+// Stats routes - User analytics (Protected)
+app.use('/api/stats', statsRoutes);
 
 // 404 handler
 app.use((req, res) => {

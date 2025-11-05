@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 // Middleware to verify JWT token
 export const authenticateToken = (req, res, next) => {
@@ -27,6 +28,7 @@ export const authenticateToken = (req, res, next) => {
       req.user = {
         userId: decoded.userId,
         email: decoded.email,
+        isAdmin: decoded.isAdmin || false,
       };
 
       next();
@@ -62,6 +64,7 @@ export const optionalAuth = (req, res, next) => {
         req.user = {
           userId: decoded.userId,
           email: decoded.email,
+          isAdmin: decoded.isAdmin || false,
         };
       }
       next();

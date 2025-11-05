@@ -53,9 +53,28 @@ router.post('/', authenticateToken, async (req, res) => {
 
       // Get S3 URLs
       const videoUrl = videoFile.location;
-      const thumbnailUrl = thumbnailFile
-        ? thumbnailFile.location
-        : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=250&fit=crop';
+      
+      // Determine thumbnail URL
+      let thumbnailUrl;
+      if (thumbnailFile) {
+        // Use uploaded thumbnail
+        thumbnailUrl = thumbnailFile.location;
+        console.log('📷 Using uploaded thumbnail');
+      } else {
+        // Generate thumbnail from first frame of video
+        console.log('📷 No custom thumbnail provided, generating from video...');
+        try {
+          const { generateThumbnailFromVideo } = await import('../utils/videoUtils.js');
+          const videoId = `thumb-${Date.now()}`;
+          thumbnailUrl = await generateThumbnailFromVideo(videoUrl, videoId);
+          console.log('✅ Generated thumbnail from video first frame');
+        } catch (error) {
+          console.error('⚠️  Failed to generate thumbnail:', error.message);
+          // Fall back to placeholder
+          thumbnailUrl = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&h=450&fit=crop&q=80';
+          console.log('📷 Using default placeholder thumbnail');
+        }
+      }
 
       // Extract metadata from request body
       const {

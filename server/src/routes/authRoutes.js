@@ -42,7 +42,7 @@ router.post('/register', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -56,6 +56,7 @@ router.post('/register', async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
       },
     });
@@ -111,12 +112,12 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    console.log(`✅ User logged in: ${user.email}`);
+    console.log(`✅ User logged in: ${user.email}${user.isAdmin ? ' (Admin)' : ''}`);
 
     res.status(200).json({
       success: true,
@@ -125,6 +126,7 @@ router.post('/login', async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
       },
     });

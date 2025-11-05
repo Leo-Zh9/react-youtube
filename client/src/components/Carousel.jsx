@@ -9,9 +9,9 @@ import 'swiper/css/pagination';
 
 const Carousel = ({ title, videos }) => {
   return (
-    <div className="mb-8 md:mb-12">
+    <div className="mb-12 md:mb-16">
       {/* Section Title */}
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 md:px-8 lg:px-12">
+      <h2 className="text-lg md:text-xl font-semibold text-white mb-3 px-4 md:px-8 lg:px-12 tracking-wide">
         {title}
       </h2>
 
@@ -52,35 +52,23 @@ const Carousel = ({ title, videos }) => {
           ))}
         </Swiper>
 
-        {/* Custom Navigation Buttons */}
-        <div className="swiper-button-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-black bg-opacity-60 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {/* Custom Navigation Buttons - Netflix Style */}
+        <div className="swiper-button-prev absolute left-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16">
           <svg
-            className="w-8 h-8 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+            className="w-10 h-10 text-white drop-shadow-lg"
+            fill="currentColor"
+            viewBox="0 0 20 20"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </div>
-        <div className="swiper-button-next absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-full bg-black bg-opacity-60 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="swiper-button-next absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-black to-transparent flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 hover:w-16">
           <svg
-            className="w-8 h-8 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+            className="w-10 h-10 text-white drop-shadow-lg"
+            fill="currentColor"
+            viewBox="0 0 20 20"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
           </svg>
         </div>
       </div>

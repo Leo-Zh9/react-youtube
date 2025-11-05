@@ -95,14 +95,17 @@ export const updateVideo = async (id, videoData) => {
   }
 };
 
-// Delete video (Admin functionality)
+// Delete video (Owner or Admin only)
 export const deleteVideo = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/videos/${id}`, {
       method: 'DELETE',
+      headers: {
+        ...getAuthHeader(), // Add Authorization header
+      },
     });
     const data = await handleResponse(response);
-    return data.data;
+    return data;
   } catch (error) {
     console.error(`Error deleting video ${id}:`, error);
     throw error;
@@ -368,6 +371,43 @@ export const getSearchFilters = async () => {
     return data.data;
   } catch (error) {
     console.error('Error fetching search filters:', error);
+    throw error;
+  }
+};
+
+// ===== USER UPLOADS & STATS =====
+
+// Get user's uploaded videos
+export const getMyVideos = async (page = 1, limit = 20) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/videos?mine=true&page=${page}&limit=${limit}`,
+      {
+        headers: {
+          ...getAuthHeader(),
+        },
+      }
+    );
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user videos:', error);
+    throw error;
+  }
+};
+
+// Get user's overall statistics
+export const getUserStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stats`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
     throw error;
   }
 };

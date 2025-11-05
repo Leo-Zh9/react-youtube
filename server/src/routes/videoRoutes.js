@@ -2,16 +2,32 @@ import express from 'express';
 import Video from '../models/Video.js';
 import Like from '../models/Like.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
+import Comment from '../models/Comment.js';
 
 const router = express.Router();
 
 // GET /api/videos - Get all videos with sorting and pagination
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
     // Extract query parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 24;
     const sortParam = req.query.sort || 'createdAt';
+    const mine = req.query.mine === 'true';
+    
+    // Build query filter
+    let filter = {};
+    
+    // If ?mine=true, filter by current user's uploads
+    if (mine) {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required to view your uploads',
+        });
+      }
+      filter.owner = req.user.userId;
+    }
     
     // Determine sort field and order
     let sortField = 'createdAt';
@@ -29,14 +45,36 @@ router.get('/', async (req, res) => {
     const skip = (page - 1) * limit;
     
     // Get total count for pagination
-    const totalCount = await Video.countDocuments();
+    const totalCount = await Video.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
     
     // Fetch videos with sorting and pagination
-    const videos = await Video.find()
+    const videos = await Video.find(filter)
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
+    
+    // If ?mine=true, enrich with analytics (commentsCount)
+    if (mine && videos.length > 0) {
+      const enrichedVideos = await Promise.all(
+        videos.map(async (video) => {
+          const commentsCount = await Comment.countDocuments({ videoId: video.id });
+          return {
+            ...video.toObject(),
+            commentsCount,
+          };
+        })
+      );
+      
+      return res.status(200).json({
+        success: true,
+        count: totalCount,
+        data: enrichedVideos,
+        page: page,
+        totalPages: totalPages,
+        limit: limit,
+      });
+    }
     
     res.status(200).json({
       success: true,
@@ -450,10 +488,11 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/videos/:id - Delete a video
-router.delete('/:id', async (req, res) => {
+// DELETE /api/videos/:id - Delete a video (Owner or Admin only)
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const video = await Video.findOneAndDelete({ id: req.params.id });
+    // First find the video to check ownership
+    const video = await Video.findOne({ id: req.params.id });
 
     if (!video) {
       return res.status(404).json({
@@ -462,10 +501,29 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    // Check if user is owner or admin
+    const isOwner = video.owner && video.owner.toString() === req.user.userId.toString();
+    const isAdmin = req.user.isAdmin;
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to delete this video',
+      });
+    }
+
+    // Delete the video
+    await Video.findOneAndDelete({ id: req.params.id });
+    
+    // Also delete associated likes and comments
+    await Like.deleteMany({ videoId: req.params.id });
+    await Comment.deleteMany({ videoId: req.params.id });
+
+    console.log(`🗑️  Video deleted: ${video.title} by ${req.user.email}${isAdmin && !isOwner ? ' (Admin)' : ''}`);
+
     res.status(200).json({
       success: true,
       message: 'Video deleted successfully',
-      data: video,
     });
   } catch (error) {
     console.error('Error deleting video:', error);
