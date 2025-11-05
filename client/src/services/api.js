@@ -229,3 +229,111 @@ export const deleteComment = async (commentId) => {
   }
 };
 
+// ===== PLAYLIST OPERATIONS =====
+
+// Get user's playlists
+export const getUserPlaylists = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching playlists:', error);
+    throw error;
+  }
+};
+
+// Get single playlist with video details
+export const getPlaylist = async (playlistId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error(`Error fetching playlist ${playlistId}:`, error);
+    throw error;
+  }
+};
+
+// Create a new playlist
+export const createPlaylist = async (name) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ name }),
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error('Error creating playlist:', error);
+    throw error;
+  }
+};
+
+// Add video to playlist
+export const addToPlaylist = async (playlistId, videoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ videoId }),
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error(`Error adding video to playlist:`, error);
+    throw error;
+  }
+};
+
+// Remove video from playlist
+export const removeFromPlaylist = async (playlistId, videoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ videoId }),
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error(`Error removing video from playlist:`, error);
+    throw error;
+  }
+};
+
+// Delete a playlist
+export const deletePlaylist = async (playlistId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}`, {
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error deleting playlist ${playlistId}:`, error);
+    throw error;
+  }
+};
+

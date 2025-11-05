@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getVideoById, getRecommendedVideos, incrementViewCount, toggleLike, getLikesInfo } from '../services/api';
 import { isAuthenticated } from '../services/authService';
 import CommentsSection from '../components/CommentsSection';
+import PlaylistModal from '../components/PlaylistModal';
 
 const VideoPlayerPage = () => {
   const { id } = useParams();
@@ -215,6 +216,10 @@ const VideoPlayerPage = () => {
       return;
     }
     setShowPlaylistModal(true);
+  };
+
+  const handleClosePlaylistModal = () => {
+    setShowPlaylistModal(false);
   };
 
   // Handle share
@@ -482,31 +487,10 @@ const VideoPlayerPage = () => {
 
               {/* Playlist Modal */}
               {showPlaylistModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowPlaylistModal(false)}>
-                  <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="text-2xl font-bold text-white mb-4">Save to Playlist</h3>
-                    <p className="text-gray-400 mb-6">
-                      Playlist functionality will be available soon! This feature will allow you to organize your favorite videos into custom playlists.
-                    </p>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setShowPlaylistModal(false)}
-                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded transition-colors"
-                      >
-                        Close
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowPlaylistModal(false);
-                          // TODO: Implement playlist creation
-                        }}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded transition-colors"
-                      >
-                        Create Playlist
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <PlaylistModal
+                  videoId={video.id || id}
+                  onClose={handleClosePlaylistModal}
+                />
               )}
 
               {/* Description Box */}

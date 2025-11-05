@@ -4,6 +4,7 @@ import VideoPlayerPage from './pages/VideoPlayerPage';
 import UploadPage from './pages/UploadPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import PlaylistsPage from './pages/PlaylistsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,6 +21,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <UploadPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/playlists"
+            element={
+              <ProtectedRoute>
+                <PlaylistsPage />
               </ProtectedRoute>
             }
           />

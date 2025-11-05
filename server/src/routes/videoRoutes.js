@@ -281,7 +281,7 @@ router.patch('/:id/view', async (req, res) => {
 });
 
 // GET /api/videos/:id - Get single video by custom ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const video = await Video.findOne({ id: req.params.id });
 
@@ -292,9 +292,23 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Include playlist info if user is authenticated
+    let inPlaylists = [];
+    if (req.user) {
+      const Playlist = (await import('../models/Playlist.js')).default;
+      const playlists = await Playlist.find({
+        user: req.user.userId,
+        videos: video.id,
+      }).select('_id name');
+      inPlaylists = playlists.map(p => ({ _id: p._id, name: p.name }));
+    }
+
     res.status(200).json({
       success: true,
-      data: video,
+      data: {
+        ...video.toObject(),
+        inPlaylists,
+      },
     });
   } catch (error) {
     console.error('Error fetching video:', error);

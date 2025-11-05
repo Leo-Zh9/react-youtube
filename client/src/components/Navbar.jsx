@@ -77,12 +77,14 @@ const Navbar = ({ onSearch }) => {
                 Upload
               </button>
             )}
-            <button
-              onClick={() => navigate('/mylist')}
-              className="text-white hover:text-gray-300 transition-colors font-medium"
-            >
-              My List
-            </button>
+            {loggedIn && (
+              <button
+                onClick={() => navigate('/playlists')}
+                className="text-white hover:text-gray-300 transition-colors font-medium"
+              >
+                Playlists
+              </button>
+            )}
           </div>
         </div>
 

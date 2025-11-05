@@ -12,6 +12,7 @@ import videoRoutes from './routes/videoRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
+import playlistRoutes from './routes/playlistRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -73,6 +74,9 @@ app.use('/api/upload', uploadRoutes);
 
 // Comment routes - Comments on videos
 app.use('/api', commentRoutes);
+
+// Playlist routes - User playlists (Protected)
+app.use('/api/playlists', playlistRoutes);
 
 // 404 handler
 app.use((req, res) => {
