@@ -3,10 +3,66 @@ import Video from '../models/Video.js';
 
 const router = express.Router();
 
-// GET /api/videos - Get all videos
+// GET /api/videos - Get all videos with sorting and pagination
 router.get('/', async (req, res) => {
   try {
-    const videos = await Video.find().sort({ createdAt: -1 });
+    // Extract query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 24;
+    const sortParam = req.query.sort || 'createdAt';
+    
+    // Determine sort field and order
+    let sortField = 'createdAt';
+    let sortOrder = -1; // descending by default
+    
+    if (sortParam === 'views') {
+      sortField = 'views';
+      sortOrder = -1; // most views first
+    } else if (sortParam === 'createdAt') {
+      sortField = 'createdAt';
+      sortOrder = -1; // newest first
+    }
+    
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+    
+    // Get total count for pagination
+    const totalCount = await Video.countDocuments();
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Fetch videos with sorting and pagination
+    const videos = await Video.find()
+      .sort({ [sortField]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+    
+    res.status(200).json({
+      success: true,
+      count: totalCount,
+      data: videos,
+      page: page,
+      totalPages: totalPages,
+      limit: limit,
+    });
+  } catch (error) {
+    console.error('Error fetching videos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching videos',
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/videos/new - Get newest videos (most recent uploads)
+router.get('/new', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    
+    // Fetch newest videos sorted by createdAt descending
+    const videos = await Video.find()
+      .sort({ createdAt: -1 })
+      .limit(limit);
     
     res.status(200).json({
       success: true,
@@ -14,10 +70,85 @@ router.get('/', async (req, res) => {
       data: videos,
     });
   } catch (error) {
-    console.error('Error fetching videos:', error);
+    console.error('Error fetching new videos:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching videos',
+      message: 'Error fetching new videos',
+      error: error.message,
+    });
+  }
+});
+
+// PATCH /api/videos/:id/view - Increment view count atomically
+router.patch('/:id/view', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Try to find by custom id field first, then by MongoDB _id
+    let video = await Video.findOne({ id });
+    
+    if (!video) {
+      // Fallback to MongoDB _id if valid ObjectId
+      if (id.match(/^[0-9a-fA-F]{24}$/)) {
+        video = await Video.findById(id);
+      }
+    }
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: `Video with ID '${id}' not found`,
+      });
+    }
+
+    // Parse current views (could be string like "1.2M" or number)
+    let currentViews = 0;
+    if (typeof video.views === 'string') {
+      // If views is a string like "1.2M", convert to number
+      const viewsStr = video.views.toLowerCase();
+      if (viewsStr.includes('m')) {
+        currentViews = Math.floor(parseFloat(viewsStr) * 1000000);
+      } else if (viewsStr.includes('k')) {
+        currentViews = Math.floor(parseFloat(viewsStr) * 1000);
+      } else {
+        currentViews = parseInt(viewsStr) || 0;
+      }
+    } else {
+      currentViews = parseInt(video.views) || 0;
+    }
+
+    // Increment by 1
+    currentViews += 1;
+
+    // Format back to readable string
+    let formattedViews;
+    if (currentViews >= 1000000) {
+      formattedViews = (currentViews / 1000000).toFixed(1) + 'M';
+    } else if (currentViews >= 1000) {
+      formattedViews = (currentViews / 1000).toFixed(1) + 'K';
+    } else {
+      formattedViews = currentViews.toString();
+    }
+
+    // Update video atomically using findOneAndUpdate
+    const updatedVideo = await Video.findOneAndUpdate(
+      { _id: video._id },
+      { $set: { views: formattedViews, updatedAt: Date.now() } },
+      { new: true }
+    );
+
+    console.log(`📊 View counted for video: ${video.title} (${formattedViews} views)`);
+
+    res.status(200).json({
+      success: true,
+      views: formattedViews,
+      video: updatedVideo,
+    });
+  } catch (error) {
+    console.error('Error incrementing views:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating view count',
       error: error.message,
     });
   }

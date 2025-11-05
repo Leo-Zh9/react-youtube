@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getVideoById, getRecommendedVideos } from '../services/api';
+import { getVideoById, getRecommendedVideos, incrementViewCount } from '../services/api';
 
 const VideoPlayerPage = () => {
   const { id } = useParams();
@@ -9,13 +9,19 @@ const VideoPlayerPage = () => {
   const [recommendedVideos, setRecommendedVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Refs for view tracking
+  const videoRef = useRef(null);
+  const viewCounted = useRef(false);
+  const watchStartTime = useRef(null);
+  const viewTrackingTimer = useRef(null);
 
   useEffect(() => {
     const fetchVideoData = async () => {
       try {
         setLoading(true);
         setError(null);
-        window.scrollTo(0, 0); // Scroll to top when video changes
+        window.scrollTo(0, 0);
 
         // Fetch the main video and recommended videos
         const [videoData, recommended] = await Promise.all([
@@ -34,7 +40,121 @@ const VideoPlayerPage = () => {
     };
 
     fetchVideoData();
+    
+    // Reset view tracking when video changes
+    viewCounted.current = false;
+    watchStartTime.current = null;
+    if (viewTrackingTimer.current) {
+      clearTimeout(viewTrackingTimer.current);
+    }
   }, [id]);
+
+  // Parse duration to seconds
+  const parseDuration = (durationStr) => {
+    if (!durationStr) return 0;
+    
+    // Handle formats like "12:34", "1:23:45", "2h 15m", etc.
+    const timeMatch = durationStr.match(/(\d+):(\d+):?(\d+)?/);
+    if (timeMatch) {
+      const hours = timeMatch[3] ? parseInt(timeMatch[1]) : 0;
+      const minutes = timeMatch[3] ? parseInt(timeMatch[2]) : parseInt(timeMatch[1]);
+      const seconds = timeMatch[3] ? parseInt(timeMatch[3]) : parseInt(timeMatch[2]);
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+    
+    // Handle "2h 15m" format
+    const hourMatch = durationStr.match(/(\d+)h/);
+    const minMatch = durationStr.match(/(\d+)m/);
+    const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+    const minutes = minMatch ? parseInt(minMatch[1]) : 0;
+    return hours * 3600 + minutes * 60;
+  };
+
+  // Handle view counting logic
+  const handleViewCount = async () => {
+    if (viewCounted.current || !video) return;
+
+    try {
+      await incrementViewCount(video.id);
+      viewCounted.current = true;
+      console.log('✅ View counted for video:', video.title);
+      
+      // Update local video state with new view count
+      setVideo(prev => ({
+        ...prev,
+        views: prev.views ? (parseInt(prev.views) + 1).toString() : '1'
+      }));
+    } catch (error) {
+      console.error('Failed to count view:', error);
+    }
+  };
+
+  // Set up video event listeners for view tracking
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !video) return;
+
+    const durationSeconds = parseDuration(video.duration);
+    const isShortVideo = durationSeconds < 15;
+    
+    // Determine threshold for counting view
+    const viewThreshold = isShortVideo 
+      ? 3  // 3 seconds for short videos
+      : Math.min(10, durationSeconds * 0.2); // 10s or 20% of duration
+
+    const handlePlay = () => {
+      if (viewCounted.current) return;
+      
+      // Start tracking watch time
+      if (!watchStartTime.current) {
+        watchStartTime.current = Date.now();
+      }
+
+      // Set up timer to count view after threshold
+      if (viewTrackingTimer.current) {
+        clearTimeout(viewTrackingTimer.current);
+      }
+
+      viewTrackingTimer.current = setTimeout(() => {
+        handleViewCount();
+      }, viewThreshold * 1000);
+    };
+
+    const handlePause = () => {
+      // Clear timer if paused before threshold
+      if (viewTrackingTimer.current && !viewCounted.current) {
+        clearTimeout(viewTrackingTimer.current);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      if (viewCounted.current) return;
+      
+      // Check if user has watched enough
+      const currentTime = videoElement.currentTime;
+      const duration = videoElement.duration;
+      
+      if (duration && currentTime >= viewThreshold) {
+        handleViewCount();
+      }
+    };
+
+    // Add event listeners
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+
+    // Cleanup
+    return () => {
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      
+      if (viewTrackingTimer.current) {
+        clearTimeout(viewTrackingTimer.current);
+      }
+    };
+  }, [video]);
 
   // Format upload date
   const formatDate = (dateString) => {
@@ -127,6 +247,7 @@ const VideoPlayerPage = () => {
               {/* Video Player */}
               <div className="relative bg-black rounded-lg overflow-hidden mb-6">
                 <video
+                  ref={videoRef}
                   key={video.id}
                   className="w-full aspect-video"
                   controls
@@ -134,7 +255,7 @@ const VideoPlayerPage = () => {
                   controlsList="nodownload"
                   poster={video.thumbnail}
                 >
-                  <source src={video.videoUrl} type="video/mp4" />
+                  <source src={video.videoUrl || video.url} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
@@ -166,7 +287,7 @@ const VideoPlayerPage = () => {
                       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                     />
                   </svg>
-                  <span>{video.views} views</span>
+                  <span className="font-semibold">{video.views} views</span>
                 </span>
                 <span>•</span>
                 <span className="flex items-center space-x-1">
@@ -240,8 +361,8 @@ const VideoPlayerPage = () => {
                 <div className="space-y-4">
                   {recommendedVideos.map((recommendedVideo) => (
                     <button
-                      key={recommendedVideo.id}
-                      onClick={() => navigate(`/watch/${recommendedVideo.id}`)}
+                      key={recommendedVideo.id || recommendedVideo._id}
+                      onClick={() => navigate(`/watch/${recommendedVideo.id || recommendedVideo._id}`)}
                       className="block w-full group text-left"
                     >
                       <div className="flex gap-3 hover:bg-gray-900 rounded-lg p-2 transition-all">

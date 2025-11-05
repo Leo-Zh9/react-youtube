@@ -3,24 +3,27 @@ import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import Carousel from '../components/Carousel';
-import { getAllVideos } from '../services/api';
+import { getAllVideos, getNewReleases } from '../services/api';
 
 const HomePage = () => {
   const location = useLocation();
   const [videos, setVideos] = useState([]);
+  const [newReleases, setNewReleases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newReleasesLoading, setNewReleasesLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [newReleasesError, setNewReleasesError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Fetch videos from backend on component mount
+  // Fetch all videos from backend on component mount
   useEffect(() => {
     const fetchVideos = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getAllVideos();
-        setVideos(data);
+        const response = await getAllVideos({ limit: 100 }); // Get up to 100 videos
+        setVideos(response.data || []);
       } catch (err) {
         console.error('Failed to fetch videos:', err);
         setError('Failed to load videos. Please try again later.');
@@ -30,6 +33,25 @@ const HomePage = () => {
     };
 
     fetchVideos();
+  }, []);
+
+  // Fetch new releases separately
+  useEffect(() => {
+    const fetchNewReleases = async () => {
+      try {
+        setNewReleasesLoading(true);
+        setNewReleasesError(null);
+        const data = await getNewReleases(20);
+        setNewReleases(data || []);
+      } catch (err) {
+        console.error('Failed to fetch new releases:', err);
+        setNewReleasesError('Failed to load new releases.');
+      } finally {
+        setNewReleasesLoading(false);
+      }
+    };
+
+    fetchNewReleases();
   }, []);
 
   // Show upload success message if redirected from upload page
@@ -70,10 +92,9 @@ const HomePage = () => {
 
     const categories = {
       featured: videos.find((v) => v.id === 'featured-1') || videos[0],
-      trending: videos.filter((v) => v.id.startsWith('trend-')),
-      newReleases: videos.filter((v) => v.id.startsWith('new-')),
-      topPicks: videos.filter((v) => v.id.startsWith('top-')),
-      watchAgain: videos.filter((v) => v.id.startsWith('watch-')),
+      trending: videos.filter((v) => v.id?.startsWith('trend-')),
+      topPicks: videos.filter((v) => v.id?.startsWith('top-')),
+      watchAgain: videos.filter((v) => v.id?.startsWith('watch-')),
     };
 
     return categories;
@@ -85,8 +106,8 @@ const HomePage = () => {
     [searchQuery, videosByCategory.trending]
   );
   const filteredNewReleases = useMemo(
-    () => filterVideos(videosByCategory.newReleases || []),
-    [searchQuery, videosByCategory.newReleases]
+    () => filterVideos(newReleases),
+    [searchQuery, newReleases]
   );
   const filteredTopPicks = useMemo(
     () => filterVideos(videosByCategory.topPicks || []),
@@ -197,9 +218,46 @@ const HomePage = () => {
           <Carousel title="Trending Now" videos={filteredTrending} />
         )}
 
-        {/* New Releases */}
-        {filteredNewReleases.length > 0 && (
+        {/* New Releases - From API */}
+        {!newReleasesLoading && !newReleasesError && filteredNewReleases.length > 0 && (
           <Carousel title="New Releases" videos={filteredNewReleases} />
+        )}
+        
+        {/* New Releases Loading State */}
+        {newReleasesLoading && (
+          <div className="px-4 md:px-8 lg:px-12 mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-4">
+              New Releases
+            </h2>
+            <div className="flex items-center justify-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
+              <span className="ml-3 text-gray-400">Loading new releases...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* New Releases Error State */}
+        {newReleasesError && !searchQuery && (
+          <div className="px-4 md:px-8 lg:px-12 mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-4">
+              New Releases
+            </h2>
+            <div className="bg-gray-900 rounded-lg p-6 text-center">
+              <p className="text-gray-400">{newReleasesError}</p>
+            </div>
+          </div>
+        )}
+        
+        {/* New Releases Empty State */}
+        {!newReleasesLoading && !newReleasesError && filteredNewReleases.length === 0 && !searchQuery && (
+          <div className="px-4 md:px-8 lg:px-12 mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-4">
+              New Releases
+            </h2>
+            <div className="bg-gray-900 rounded-lg p-6 text-center">
+              <p className="text-gray-400">No new releases available</p>
+            </div>
+          </div>
         )}
 
         {/* Top Picks for You */}

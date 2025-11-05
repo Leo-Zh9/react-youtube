@@ -13,14 +13,33 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-// Get all videos
-export const getAllVideos = async () => {
+// Get all videos with optional sorting and pagination
+export const getAllVideos = async (options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos`);
+    const { page = 1, limit = 24, sort = 'createdAt' } = options;
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      sort,
+    });
+    
+    const response = await fetch(`${API_BASE_URL}/videos?${queryParams}`);
+    const data = await handleResponse(response);
+    return data; // Return full response with pagination info
+  } catch (error) {
+    console.error('Error fetching all videos:', error);
+    throw error;
+  }
+};
+
+// Get new releases (newest videos)
+export const getNewReleases = async (limit = 20) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/new?limit=${limit}`);
     const data = await handleResponse(response);
     return data.data; // Extract the data array from the API response
   } catch (error) {
-    console.error('Error fetching all videos:', error);
+    console.error('Error fetching new releases:', error);
     throw error;
   }
 };
@@ -90,12 +109,33 @@ export const deleteVideo = async (id) => {
 // Get recommended videos (excludes current video)
 export const getRecommendedVideos = async (currentVideoId, limit = 10) => {
   try {
-    const allVideos = await getAllVideos();
+    const response = await getAllVideos({ limit: 100 });
+    const allVideos = response.data || [];
+    
+    if (!Array.isArray(allVideos)) {
+      console.error('Expected array but got:', typeof allVideos);
+      return [];
+    }
+    
     return allVideos
       .filter((video) => video.id !== currentVideoId)
       .slice(0, limit);
   } catch (error) {
     console.error('Error fetching recommended videos:', error);
+    throw error;
+  }
+};
+
+// Increment view count for a video
+export const incrementViewCount = async (videoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/view`, {
+      method: 'PATCH',
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error incrementing views for ${videoId}:`, error);
     throw error;
   }
 };
