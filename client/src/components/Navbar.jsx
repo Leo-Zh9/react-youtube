@@ -47,6 +47,19 @@ const Navbar = ({ onSearch }) => {
     }
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit(e);
+    }
+  };
+
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
@@ -91,28 +104,34 @@ const Navbar = ({ onSearch }) => {
         {/* Right side - Search and Auth */}
         <div className="flex items-center space-x-4">
           {/* Search Bar */}
-          <div className="relative">
+          <form onSubmit={handleSearchSubmit} className="relative">
             <input
               type="text"
               placeholder="Search videos..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="bg-black bg-opacity-70 border border-gray-700 text-white px-4 py-2 rounded w-48 md:w-64 focus:outline-none focus:border-white transition-all"
+              onKeyDown={handleSearchKeyDown}
+              className="bg-black bg-opacity-70 border border-gray-700 text-white px-4 py-2 pr-10 rounded w-48 md:w-64 focus:outline-none focus:border-white transition-all"
             />
-            <svg
-              className="absolute right-3 top-2.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <button
+              type="submit"
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          </form>
 
           {/* Auth Section */}
           {loggedIn ? (

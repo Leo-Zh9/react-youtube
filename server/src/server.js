@@ -13,6 +13,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import playlistRoutes from './routes/playlistRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,6 +66,9 @@ app.get('/api/health', (req, res) => {
 
 // Auth routes - User authentication
 app.use('/api/auth', authRoutes);
+
+// Search routes - Search and filter videos (MUST be before video routes)
+app.use('/api/videos/search', searchRoutes);
 
 // Video routes - MongoDB powered
 app.use('/api/videos', videoRoutes);

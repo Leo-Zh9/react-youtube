@@ -74,6 +74,9 @@ const videoSchema = new mongoose.Schema({
   },
 });
 
+// Text index for search functionality
+videoSchema.index({ title: 'text', description: 'text' });
+
 // Update the updatedAt timestamp before saving
 videoSchema.pre('save', function (next) {
   this.updatedAt = Date.now();

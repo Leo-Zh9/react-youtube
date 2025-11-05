@@ -337,3 +337,38 @@ export const deletePlaylist = async (playlistId) => {
   }
 };
 
+// ===== SEARCH OPERATIONS =====
+
+// Search videos with filters
+export const searchVideos = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params.q) queryParams.append('q', params.q);
+    if (params.category) queryParams.append('category', params.category);
+    if (params.year) queryParams.append('year', params.year);
+    if (params.sort) queryParams.append('sort', params.sort);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    
+    const response = await fetch(`${API_BASE_URL}/videos/search?${queryParams.toString()}`);
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error('Error searching videos:', error);
+    throw error;
+  }
+};
+
+// Get available filter options
+export const getSearchFilters = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/search/filters`);
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching search filters:', error);
+    throw error;
+  }
+};
+
