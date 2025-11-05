@@ -35,8 +35,8 @@ const LoginPage = () => {
     try {
       await login(formData.email, formData.password);
       
-      // Redirect to intended page or upload page or home
-      const from = location.state?.from || '/upload';
+      // Redirect to intended page or home page
+      const from = location.state?.from || '/';
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
