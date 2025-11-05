@@ -17,6 +17,7 @@ import commentRoutes from './routes/commentRoutes.js';
 import playlistRoutes from './routes/playlistRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 
@@ -134,6 +135,9 @@ app.use('/api/playlists', playlistRoutes);
 
 // Stats routes - User analytics (Protected)
 app.use('/api/stats', statsRoutes);
+
+// Subscription routes - User subscriptions (Protected)
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // 404 handler
 app.use((req, res) => {

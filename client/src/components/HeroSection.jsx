@@ -1,4 +1,21 @@
+import { useNavigate } from 'react-router-dom';
+
 const HeroSection = ({ featuredVideo }) => {
+  const navigate = useNavigate();
+
+  const handlePlay = () => {
+    if (featuredVideo && (featuredVideo.id || featuredVideo._id)) {
+      navigate(`/watch/${featuredVideo.id || featuredVideo._id}`);
+    }
+  };
+
+  const handleMoreInfo = () => {
+    if (featuredVideo && (featuredVideo.id || featuredVideo._id)) {
+      // Scroll to video details section or navigate to watch page
+      navigate(`/watch/${featuredVideo.id || featuredVideo._id}`);
+    }
+  };
+
   return (
     <div className="relative h-[70vh] md:h-[85vh] w-full">
       {/* Background Image */}
@@ -30,7 +47,10 @@ const HeroSection = ({ featuredVideo }) => {
           {/* Buttons */}
           <div className="flex space-x-3 md:space-x-4 pt-2">
             {/* Play Button */}
-            <button className="flex items-center space-x-2 bg-white text-black px-6 md:px-8 py-2.5 md:py-3 rounded-sm font-bold hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl">
+            <button 
+              onClick={handlePlay}
+              className="flex items-center space-x-2 bg-white text-black px-6 md:px-8 py-2.5 md:py-3 rounded-sm font-bold hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl"
+            >
               <svg
                 className="w-5 h-5 md:w-6 md:h-6"
                 fill="currentColor"
@@ -42,7 +62,10 @@ const HeroSection = ({ featuredVideo }) => {
             </button>
 
             {/* More Info Button */}
-            <button className="flex items-center space-x-2 bg-gray-800 bg-opacity-80 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-sm font-semibold hover:bg-gray-700 transition-all border border-gray-700 hover:border-gray-600">
+            <button 
+              onClick={handleMoreInfo}
+              className="flex items-center space-x-2 bg-gray-800 bg-opacity-80 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-sm font-semibold hover:bg-gray-700 transition-all border border-gray-700 hover:border-gray-600"
+            >
               <svg
                 className="w-5 h-5 md:w-6 md:h-6"
                 fill="none"
