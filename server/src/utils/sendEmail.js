@@ -1,14 +1,14 @@
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
 /**
  * Check if email is configured
  */
 export const isEmailConfigured = () => {
-  // Check for SendGrid API key (starts with SG.)
-  const hasSendGrid = process.env.EMAIL_PASS && process.env.EMAIL_PASS.startsWith('SG.');
+  // Check for Resend API key (starts with re_)
+  const hasResend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.startsWith('re_');
   
-  if (!hasSendGrid) {
-    console.warn('⚠️  SendGrid API key not configured');
+  if (!hasResend) {
+    console.warn('⚠️  Resend API key not configured');
     return false;
   }
   
@@ -16,7 +16,7 @@ export const isEmailConfigured = () => {
 };
 
 /**
- * Send email using SendGrid HTTP API
+ * Send email using Resend
  * @param {Object} options - Email options (to, subject, text, html)
  */
 export const sendEmail = async (options) => {
@@ -26,15 +26,15 @@ export const sendEmail = async (options) => {
     console.log('📧 Would have sent email to:', options.to);
     console.log('📝 Subject:', options.subject);
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('⚠️  SENDGRID API KEY MISSING');
+    console.log('⚠️  RESEND API KEY MISSING');
     console.log('Add this to your environment variables:');
-    console.log('   EMAIL_PASS=SG.your-sendgrid-api-key');
-    console.log('   EMAIL_FROM=Your Name <email@example.com>');
+    console.log('   RESEND_API_KEY=re_your-api-key');
+    console.log('   EMAIL_FROM=ReactFlix <onboarding@resend.dev>');
     console.log('═══════════════════════════════════════════════════════════');
     
     // In development, don't throw error - just log it
     if (process.env.NODE_ENV === 'development') {
-      return { messageId: 'dev-mode-no-email' };
+      return { id: 'dev-mode-no-email' };
     }
     
     throw new Error('Email configuration missing');
@@ -42,37 +42,32 @@ export const sendEmail = async (options) => {
 
   try {
     console.log(`📧 Attempting to send email to: ${options.to}`);
-    console.log(`   Using SendGrid HTTP API (not SMTP)`);
+    console.log(`   Using Resend API`);
     
-    // Set SendGrid API key
-    sgMail.setApiKey(process.env.EMAIL_PASS);
+    // Initialize Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Prepare email message
-    const msg = {
+    // Send email via Resend
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'ReactFlix <onboarding@resend.dev>',
       to: options.to,
-      from: process.env.EMAIL_FROM || 'noreply@example.com',
       subject: options.subject,
-      text: options.text || 'Please enable HTML to view this email',
       html: options.html,
-    };
+    });
 
-    // Send email via SendGrid HTTP API
-    const [response] = await sgMail.send(msg);
+    if (error) {
+      console.error('❌ Resend Error:', error);
+      throw new Error(error.message || 'Failed to send email');
+    }
     
     console.log(`✅ Email sent successfully to: ${options.to}`);
-    console.log(`   Status Code: ${response.statusCode}`);
+    console.log(`   Email ID: ${data.id}`);
     return { 
-      messageId: response.headers['x-message-id'],
-      statusCode: response.statusCode 
+      messageId: data.id,
+      success: true 
     };
   } catch (error) {
     console.error('❌ Error sending email:', error.message);
-    
-    // SendGrid-specific error handling
-    if (error.response) {
-      console.error('   SendGrid Error:', error.response.body);
-    }
-    
     throw new Error('Failed to send email');
   }
 };
