@@ -1,22 +1,14 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 /**
  * Check if email is configured
  */
 export const isEmailConfigured = () => {
-  // Check for Resend API key (starts with re_)
-  const hasResend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.startsWith('re_');
-  
-  if (!hasResend) {
-    console.warn('⚠️  Resend API key not configured');
-    return false;
-  }
-  
-  return true;
+  return !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 };
 
 /**
- * Send email using Resend
+ * Send email using Gmail SMTP on port 465 (SSL)
  * @param {Object} options - Email options (to, subject, text, html)
  */
 export const sendEmail = async (options) => {
@@ -26,15 +18,18 @@ export const sendEmail = async (options) => {
     console.log('📧 Would have sent email to:', options.to);
     console.log('📝 Subject:', options.subject);
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('⚠️  RESEND API KEY MISSING');
-    console.log('Add this to your environment variables:');
-    console.log('   RESEND_API_KEY=re_your-api-key');
-    console.log('   EMAIL_FROM=ReactFlix <onboarding@resend.dev>');
+    console.log('⚠️  EMAIL CONFIGURATION MISSING');
+    console.log('Add these to your environment variables:');
+    console.log('   EMAIL_HOST=smtp.gmail.com');
+    console.log('   EMAIL_PORT=465');
+    console.log('   EMAIL_USER=your-email@gmail.com');
+    console.log('   EMAIL_PASS=your-app-password');
+    console.log('   EMAIL_FROM=Your Name <your-email@gmail.com>');
     console.log('═══════════════════════════════════════════════════════════');
     
     // In development, don't throw error - just log it
     if (process.env.NODE_ENV === 'development') {
-      return { id: 'dev-mode-no-email' };
+      return { messageId: 'dev-mode-no-email' };
     }
     
     throw new Error('Email configuration missing');
@@ -42,32 +37,48 @@ export const sendEmail = async (options) => {
 
   try {
     console.log(`📧 Attempting to send email to: ${options.to}`);
-    console.log(`   Using Resend API`);
+    console.log(`   Using Gmail SMTP on port 465 (SSL)`);
     
-    // Initialize Resend
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'ReactFlix <onboarding@resend.dev>',
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
+    // Create transporter with SSL (port 465)
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT) || 465,
+      secure: true, // true for port 465, false for port 587
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
-    if (error) {
-      console.error('❌ Resend Error:', error);
-      throw new Error(error.message || 'Failed to send email');
-    }
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || `"ReactFlix" <${process.env.EMAIL_USER}>`,
+      to: options.to,
+      subject: options.subject,
+      text: options.text || 'Please enable HTML to view this email',
+      html: options.html,
+    };
+
+    // Send email with timeout
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email send timeout after 20 seconds')), 20000)
+    );
+    
+    const info = await Promise.race([sendPromise, timeoutPromise]);
     
     console.log(`✅ Email sent successfully to: ${options.to}`);
-    console.log(`   Email ID: ${data.id}`);
+    console.log(`   Message ID: ${info.messageId}`);
     return { 
-      messageId: data.id,
+      messageId: info.messageId,
       success: true 
     };
   } catch (error) {
     console.error('❌ Error sending email:', error.message);
+    console.error('   Error details:', error);
     throw new Error('Failed to send email');
   }
 };
