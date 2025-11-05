@@ -1,14 +1,14 @@
 import express from 'express';
 import Subscription from '../models/Subscription.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // POST /api/subscriptions/:userId - Subscribe to a user
-router.post('/:userId', authMiddleware, async (req, res) => {
+router.post('/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const subscriberId = req.user.id;
+    const subscriberId = req.user.userId;
 
     // Don't allow subscribing to yourself
     if (userId === subscriberId) {
@@ -53,10 +53,10 @@ router.post('/:userId', authMiddleware, async (req, res) => {
 });
 
 // DELETE /api/subscriptions/:userId - Unsubscribe from a user
-router.delete('/:userId', authMiddleware, async (req, res) => {
+router.delete('/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const subscriberId = req.user.id;
+    const subscriberId = req.user.userId;
 
     const result = await Subscription.findOneAndDelete({
       subscriber: subscriberId,
@@ -84,10 +84,10 @@ router.delete('/:userId', authMiddleware, async (req, res) => {
 });
 
 // GET /api/subscriptions/check/:userId - Check if subscribed to a user
-router.get('/check/:userId', authMiddleware, async (req, res) => {
+router.get('/check/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const subscriberId = req.user.id;
+    const subscriberId = req.user.userId;
 
     const subscription = await Subscription.findOne({
       subscriber: subscriberId,
@@ -108,9 +108,9 @@ router.get('/check/:userId', authMiddleware, async (req, res) => {
 });
 
 // GET /api/subscriptions - Get all subscriptions for current user
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const subscriberId = req.user.id;
+    const subscriberId = req.user.userId;
 
     const subscriptions = await Subscription.find({ subscriber: subscriberId })
       .populate('subscribedTo', 'email')
