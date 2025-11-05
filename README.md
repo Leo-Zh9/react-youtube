@@ -1,403 +1,455 @@
-# React YouTube - Netflix UI (Interview Assessment)
+# ReactFlix - YouTube Clone with Netflix UI
 
-A full-stack application with YouTube functionality, Netflix-style UI, and AWS S3 video storage.
+A full-stack video streaming application built with React, Node.js, Express, MongoDB, and AWS S3. Features include video upload, authentication, comments, likes, playlists, search, and filtering.
 
-## Project Structure
-
-- `/client` - React frontend with Vite
-- `/server` - Node.js Express backend with MongoDB + AWS S3
-
-## Prerequisites
-
-- Node.js 18+
-- MongoDB (local or Atlas)
-- AWS Account with S3 bucket configured
-- npm or yarn
-
-## Quick Start
-
-### 1. Install MongoDB
-
-**Option A: Local MongoDB**
-- Download from https://www.mongodb.com/try/download/community
-- Install and start the service
-
-**Option B: MongoDB Atlas (Cloud)**
-- Create free account at https://www.mongodb.com/cloud/atlas
-
-See [server/MONGODB_SETUP.md](server/MONGODB_SETUP.md) for details.
-
-### 2. Set Up AWS S3
-
-**Create S3 Bucket:**
-1. Go to AWS Console → S3
-2. Create bucket (e.g., `react-youtube-videos`)
-3. Disable "Block all public access"
-4. Configure bucket policy and CORS
-
-**Create IAM User:**
-1. Go to IAM → Users → Add user
-2. Enable programmatic access
-3. Attach `AmazonS3FullAccess` policy
-4. Save access key ID and secret key
-
-See [server/AWS_S3_SETUP.md](server/AWS_S3_SETUP.md) for complete guide.
-
-### 3. Install Dependencies
-
-```bash
-# Install client dependencies
-cd client
-npm install
-
-# Install server dependencies
-cd ../server
-npm install
-```
-
-### 4. Configure Environment
-
-Create `server/.env`:
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/react-youtube
-
-# AWS S3 Configuration
-AWS_ACCESS_KEY_ID=your_access_key_id
-AWS_SECRET_ACCESS_KEY=your_secret_access_key
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=your-bucket-name
-```
-
-### 5. Seed the Database
-
-```bash
-cd server
-npm run seed
-```
-
-### 6. Start the Servers
-
-```bash
-# Terminal 1 - Backend
-cd server
-npm run dev
-
-# Terminal 2 - Frontend
-cd client
-npm run dev
-```
-
-### 7. Access the Application
-
-**Frontend:** http://localhost:5173  
-**Backend API:** http://localhost:5000
-
-## Features
-
-### Netflix-Style UI ✨
-- 🎬 Hero section with featured video banner
-- 🎞️ Multiple horizontal scrollable carousels
-- 🔍 Real-time search filtering
-- 🎨 Dark theme with red accents
-- 📱 Fully responsive design
-- ✨ Smooth hover animations
-- 📺 Full-featured HTML5 video player
-
-### AWS S3 Integration ☁️
-- 📤 Direct file upload to AWS S3
-- 🎥 Video files stored in S3
-- 🖼️ Thumbnail images stored in S3
-- 📊 Metadata in MongoDB with S3 URLs
-- 📈 Upload progress tracking
-- ✅ File type and size validation
-- 🔒 Secure access with IAM credentials
-
-### MongoDB Backend 🗄️
-- 🔌 RESTful API with Express
-- 📊 Mongoose ODM with schemas
-- 🔄 Full CRUD operations
-- 🌐 CORS enabled
-- ✅ Data validation
-
-### Frontend Integration 🔗
-- 📡 Dynamic data fetching from API
-- 📤 Multipart file upload with progress
-- ⏳ Loading states and spinners
-- ❌ Comprehensive error handling
-- 🎯 Real-time search filtering
-
-## API Endpoints
-
-### Videos (MongoDB)
-- `GET /api/videos` - Get all videos
-- `GET /api/videos/:id` - Get single video
-- `POST /api/videos` - Create video (URL-based)
-- `PUT /api/videos/:id` - Update video
-- `DELETE /api/videos/:id` - Delete video
-
-### Upload (S3)
-- `POST /api/upload` - Upload video file to S3
-- `GET /api/upload/status` - Check S3 configuration
-
-### Health
-- `GET /api/health` - Health check
-
-## Architecture
-
-### Data Flow
-
-```
-User uploads file → React (FormData) → Express (Multer)
-                                           ↓
-                                     AWS S3 Upload
-                                           ↓
-                                     Get S3 URL
-                                           ↓
-                                     MongoDB Save
-                                           ↓
-                                     Success Response
-                                           ↓
-Homepage fetches videos → Display with S3 URLs → Video plays from S3
-```
-
-### File Storage
-
-```
-AWS S3 Bucket:
-├── videos/
-│   ├── 1699123456789-123456789.mp4
-│   ├── 1699123456790-987654321.mp4
-│   └── ...
-└── thumbnails/
-    ├── 1699123456789-111111111.jpg
-    ├── 1699123456790-222222222.jpg
-    └── ...
-
-MongoDB:
-{
-  id: "user-1699123456789",
-  title: "My Video",
-  url: "https://bucket.s3.region.amazonaws.com/videos/...",
-  thumbnail: "https://bucket.s3.region.amazonaws.com/thumbnails/...",
-  ...metadata
-}
-```
-
-## Tech Stack
+## 🚀 Features
 
 ### Frontend
-- React 18
-- Vite
-- React Router DOM
-- Tailwind CSS
-- Swiper.js
-- XMLHttpRequest (for upload progress)
+- **Netflix-inspired UI** with dark theme
+- **Video Player** with recommended videos
+- **Search & Filters** - Full-text search, category/year filtering, sorting
+- **Authentication** - JWT-based auth with protected routes
+- **Playlists** - Create and manage video playlists
+- **Comments** - Add, edit, delete comments with pagination
+- **Likes** - Like/unlike videos with optimistic UI updates
+- **Social Sharing** - Native share or clipboard fallback
+- **Responsive Design** - Works on all screen sizes
+- **Accessibility** - Keyboard navigation, focus states, ARIA labels
+- **Toast Notifications** - Global toast system for feedback
+- **Error Boundaries** - Graceful error handling
+- **Loading Skeletons** - Better UX during data fetching
 
 ### Backend
-- Node.js
-- Express
-- **MongoDB** (Database)
-- **Mongoose** (ODM)
-- **AWS SDK v3** (@aws-sdk/client-s3)
-- **Multer** (File upload middleware)
-- **Multer-S3** (S3 storage engine)
-- CORS
-- dotenv
+- **RESTful API** - Clean, consistent API design
+- **MongoDB** - NoSQL database with Mongoose ODM
+- **AWS S3** - Cloud storage for video files
+- **JWT Authentication** - Secure token-based auth
+- **Text Search** - MongoDB full-text search with indexing
+- **Rate Limiting** - Protect against abuse
+- **Request Validation** - Input validation with express-validator
+- **Security** - Helmet middleware for HTTP headers
+- **Error Handling** - Centralized error handler
+- **Logging** - Morgan logging for requests
 
-## File Structure
+## 📋 Prerequisites
 
-```
-server/
-├── src/
-│   ├── config/
-│   │   ├── database.js       # MongoDB connection
-│   │   └── aws.js           # AWS S3 & Multer config (NEW)
-│   ├── models/
-│   │   └── Video.js         # Mongoose schema
-│   ├── routes/
-│   │   ├── videoRoutes.js   # CRUD operations
-│   │   └── uploadRoutes.js  # S3 file upload (NEW)
-│   ├── scripts/
-│   │   └── seedDatabase.js  # Database seeder
-│   └── server.js            # Express app
-├── data/
-│   └── videos.json          # Seed data
-├── AWS_S3_SETUP.md          # S3 setup guide (NEW)
-└── env.example              # Environment template
+- **Node.js** (v16+ recommended)
+- **MongoDB** (local or Atlas)
+- **AWS Account** with S3 bucket configured
+- **npm** or **yarn**
 
-client/
-├── src/
-│   ├── services/
-│   │   ├── api.js              # API service
-│   │   └── uploadService.js    # S3 upload service (NEW)
-│   ├── pages/
-│   │   ├── HomePage.jsx         # Shows uploaded videos
-│   │   ├── VideoPlayerPage.jsx  # Plays S3 videos
-│   │   └── UploadPage.jsx       # File upload form (UPDATED)
-│   └── components/
-│       ├── Navbar.jsx          # Upload button
-│       └── ...
-└── UPLOAD_FEATURE.md          # Upload documentation
-```
+## 🛠️ Installation
 
-## Development Scripts
+### 1. Clone the Repository
 
-### Server
 ```bash
-npm run dev    # Start server with nodemon
-npm start      # Start server (production)
-npm run seed   # Seed database
+git clone <repository-url>
+cd react-youtube
 ```
 
-### Client
+### 2. Backend Setup
+
 ```bash
-npm run dev    # Start Vite dev server
-npm run build  # Build for production
+cd server
+npm install
 ```
 
-## Testing
+Create a `.env` file in the `server` directory (copy from `.env.example`):
 
-### Complete Testing Checklist
+```bash
+cp .env.example .env
+```
 
-See [S3_UPLOAD_TESTING.md](S3_UPLOAD_TESTING.md) for detailed testing guide.
-
-**Quick Test:**
-1. Navigate to http://localhost:5173/upload
-2. Select video file
-3. Fill in title
-4. Click "Upload to S3"
-5. Watch progress bar
-6. Success → Redirect to homepage
-7. Video appears and plays from S3
-
-## Configuration
-
-### Backend Environment Variables
-
-Required in `server/.env`:
+Update the `.env` file with your credentials:
 
 ```env
-# Server
 PORT=5000
+NODE_ENV=development
 
-# MongoDB
-MONGO_URI=mongodb://localhost:27017/react-youtube
+MONGODB_URI=mongodb://localhost:27017/react-youtube
+JWT_SECRET=your-super-secret-jwt-key-here
 
-# AWS S3
-AWS_ACCESS_KEY_ID=your_access_key_id
-AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 AWS_REGION=us-east-1
-S3_BUCKET_NAME=your-bucket-name
+AWS_S3_BUCKET=your-bucket-name
 ```
 
-### File Upload Limits
+### 3. Frontend Setup
 
-**Current Settings:**
-- Video: 500MB max
-- Thumbnail: 10MB max
-- Supported formats: All video/* and image/* types
+```bash
+cd ../client
+npm install
+```
 
-**To Change:**
-Edit `server/src/config/aws.js`:
-```javascript
-limits: {
-  fileSize: 500 * 1024 * 1024, // 500MB
+### 4. AWS S3 Setup
+
+1. Create an S3 bucket in AWS Console
+2. Configure bucket policy for public read access:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
 }
 ```
 
-## Troubleshooting
+3. Disable "Block all public access" for the bucket
+4. Create IAM user with S3 permissions and get access keys
 
-### Videos Not Loading
+### 5. MongoDB Setup
 
-1. **Check MongoDB:**
-   ```bash
-   mongosh
-   use react-youtube
-   db.videos.find()
-   ```
+**Option A: Local MongoDB**
+```bash
+# Install MongoDB locally
+# macOS: brew install mongodb-community
+# Windows: Download from mongodb.com
 
-2. **Check Backend:**
-   ```bash
-   curl http://localhost:5000/api/videos
-   ```
-
-3. **Check S3 URLs:**
-   - Copy URL from MongoDB
-   - Paste in browser
-   - Should download/play
-
-### Upload Fails
-
-1. **Check S3 Configuration:**
-   ```bash
-   curl http://localhost:5000/api/upload/status
-   ```
-
-2. **Check AWS Credentials:**
-   - Verify in `server/.env`
-   - Test in AWS Console
-
-3. **Check Bucket Permissions:**
-   - Bucket policy allows uploads
-   - IAM user has permissions
-
-### CORS Errors
-
-**Backend:** Update `server/src/server.js`
-```javascript
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true,
-}));
+# Start MongoDB
+mongod --dbpath /path/to/data
 ```
 
-**S3:** Add CORS policy to bucket (see AWS_S3_SETUP.md)
+**Option B: MongoDB Atlas** (recommended)
+1. Create account at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+2. Create cluster
+3. Get connection string
+4. Update `MONGODB_URI` in `.env`
 
-## Documentation
+## 🚀 Running the Application
 
-- [AWS S3 Setup Guide](server/AWS_S3_SETUP.md) - Complete AWS setup
-- [MongoDB Setup Guide](server/MONGODB_SETUP.md) - MongoDB installation
-- [S3 Upload Testing](S3_UPLOAD_TESTING.md) - Testing procedures
-- [API Documentation](server/API_TESTING.md) - API reference
-- [Upload Feature Guide](client/UPLOAD_FEATURE.md) - Upload feature docs
-- [Debugging Guide](server/DEBUGGING_GUIDE.md) - Troubleshooting
-- [Start Server Guide](server/START_SERVER.md) - Server startup
+### Development Mode
 
-## Security Notes
+**Terminal 1 - Backend:**
+```bash
+cd server
+npm run dev
+```
 
-⚠️ **Important:**
-- Never commit `.env` file to git
-- Rotate AWS credentials periodically
-- Use IAM roles in production (not access keys)
-- Set up billing alerts in AWS
-- Monitor S3 usage and costs
+**Terminal 2 - Frontend:**
+```bash
+cd client
+npm run dev
+```
 
-## AWS Costs
+The application will be available at:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:5000
 
-**Estimated Monthly Cost (Light Usage):**
-- S3 Storage (10 GB): $0.23
-- Data Transfer (100 GB): $9.00
-- Requests (10,000): $0.05
-- **Total: ~$10/month**
+### Production Mode
 
-**Free Tier (First 12 months):**
-- 5 GB storage
-- 20,000 GET requests
-- 2,000 PUT requests
-- 100 GB data transfer
+**Backend:**
+```bash
+cd server
+npm start
+```
 
-## Future Enhancements
+**Frontend:**
+```bash
+cd client
+npm run build
+npm run preview
+```
 
-- [ ] Video transcoding (AWS MediaConvert)
-- [ ] Automatic thumbnail generation (AWS Lambda)
-- [ ] Multiple video resolutions
-- [ ] CloudFront CDN integration
-- [ ] Resumable uploads
-- [ ] User authentication
-- [ ] Upload quota limits
-- [ ] Video analytics
+## 📚 API Documentation
 
-## License
+### Base URL
+```
+http://localhost:5000/api
+```
 
-ISC
+### Authentication Endpoints
+
+#### Register
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "Password123",
+  "name": "John Doe"
+}
+```
+
+#### Login
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "Password123"
+}
+```
+
+### Video Endpoints
+
+#### Get All Videos
+```http
+GET /api/videos?page=1&limit=20&sort=createdAt
+```
+
+#### Get Single Video
+```http
+GET /api/videos/:id
+```
+
+#### Search Videos
+```http
+GET /api/videos/search?q=mountain&category=Adventure&year=2024&sort=views&page=1&limit=20
+```
+
+#### Create Video (Protected)
+```http
+POST /api/videos
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "My Video",
+  "url": "https://s3.amazonaws.com/...",
+  "thumbnail": "https://s3.amazonaws.com/...",
+  "description": "Video description",
+  "category": "Adventure",
+  "duration": "15:42",
+  "rating": "PG"
+}
+```
+
+#### Increment View Count
+```http
+PATCH /api/videos/:id/view
+```
+
+#### Like/Unlike Video (Protected)
+```http
+POST /api/videos/:id/like
+Authorization: Bearer <token>
+```
+
+#### Get Likes Info
+```http
+GET /api/videos/:id/likes
+Authorization: Bearer <token> (optional)
+```
+
+### Comment Endpoints
+
+#### Get Comments
+```http
+GET /api/videos/:videoId/comments?page=1&limit=10
+```
+
+#### Add Comment (Protected)
+```http
+POST /api/videos/:videoId/comments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "text": "Great video!"
+}
+```
+
+#### Delete Comment (Protected)
+```http
+DELETE /api/comments/:commentId
+Authorization: Bearer <token>
+```
+
+### Playlist Endpoints (All Protected)
+
+#### Get User Playlists
+```http
+GET /api/playlists
+Authorization: Bearer <token>
+```
+
+#### Create Playlist
+```http
+POST /api/playlists
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "My Favorites"
+}
+```
+
+#### Add Video to Playlist
+```http
+POST /api/playlists/:playlistId/add
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "videoId": "trend-1"
+}
+```
+
+#### Remove Video from Playlist
+```http
+POST /api/playlists/:playlistId/remove
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "videoId": "trend-1"
+}
+```
+
+#### Delete Playlist
+```http
+DELETE /api/playlists/:playlistId
+Authorization: Bearer <token>
+```
+
+### Upload Endpoint (Protected)
+
+#### Upload File to S3
+```http
+POST /api/upload
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+{
+  "file": <video or image file>
+}
+```
+
+## 🔒 Security Features
+
+- **Helmet** - Secure HTTP headers
+- **Rate Limiting** - Prevent abuse
+  - General API: 100 req/15min
+  - Auth: 5 req/15min
+  - Comments: 10 req/5min
+  - Upload: 3 req/hour
+  - Search: 30 req/min
+- **JWT Authentication** - Secure token-based auth
+- **Input Validation** - Express-validator for all inputs
+- **Error Handling** - Safe error messages in production
+- **CORS** - Configured for frontend origin
+
+## 📁 Project Structure
+
+```
+react-youtube/
+├── client/                 # Frontend (React + Vite)
+│   ├── src/
+│   │   ├── components/    # Reusable components
+│   │   ├── pages/         # Page components
+│   │   ├── services/      # API service layer
+│   │   ├── hooks/         # Custom React hooks
+│   │   └── App.jsx
+│   ├── package.json
+│   └── vite.config.js
+│
+├── server/                 # Backend (Node + Express)
+│   ├── src/
+│   │   ├── config/        # Configuration files
+│   │   ├── models/        # Mongoose models
+│   │   ├── routes/        # Express routes
+│   │   ├── middleware/    # Custom middleware
+│   │   └── server.js      # Entry point
+│   ├── package.json
+│   └── .env.example
+│
+└── README.md
+```
+
+## 🧪 Environment Variables
+
+### Server (.env)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PORT` | Server port | `5000` |
+| `NODE_ENV` | Environment | `development` / `production` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/react-youtube` |
+| `JWT_SECRET` | Secret for JWT signing | `your-secret-key` |
+| `JWT_EXPIRES_IN` | Token expiration | `7d` |
+| `AWS_ACCESS_KEY_ID` | AWS access key | From AWS IAM |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key | From AWS IAM |
+| `AWS_REGION` | AWS region | `us-east-1` |
+| `AWS_S3_BUCKET` | S3 bucket name | `my-bucket` |
+
+## 📝 Scripts
+
+### Backend Scripts
+```bash
+npm start          # Start production server
+npm run dev        # Start development server with nodemon
+```
+
+### Frontend Scripts
+```bash
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run preview    # Preview production build
+npm run lint       # Run ESLint
+```
+
+## 🐛 Troubleshooting
+
+### MongoDB Connection Issues
+- Check if MongoDB is running: `mongod`
+- Verify `MONGODB_URI` in `.env`
+- Check firewall settings
+
+### AWS S3 Upload Errors
+- Verify AWS credentials in `.env`
+- Check bucket permissions
+- Ensure bucket policy allows uploads
+- Verify ACL settings disabled
+
+### CORS Errors
+- Check `CORS_ORIGIN` matches frontend URL
+- Verify credentials: true in both frontend and backend
+
+### Port Already in Use
+```bash
+# Find process using port
+lsof -i :5000  # macOS/Linux
+netstat -ano | findstr :5000  # Windows
+
+# Kill process
+kill -9 <PID>  # macOS/Linux
+```
+
+## 🚧 Future Enhancements
+
+- [ ] Video streaming with HLS
+- [ ] Video transcoding
+- [ ] Real-time notifications
+- [ ] Live streaming
+- [ ] Video recommendations AI
+- [ ] Advanced analytics
+- [ ] Mobile app (React Native)
+- [ ] PWA support
+- [ ] Multi-language support
+- [ ] Dark/light theme toggle
+
+## 📄 License
+
+MIT License - feel free to use this project for learning or production.
+
+## 👥 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📧 Contact
+
+For questions or support, please open an issue in the repository.
+
+---
+
+**Built with ❤️ using React, Node.js, MongoDB, and AWS**

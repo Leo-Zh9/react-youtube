@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
 // Load environment variables FIRST before any other imports
 dotenv.config();
@@ -14,6 +16,8 @@ import authRoutes from './routes/authRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import playlistRoutes from './routes/playlistRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
+import errorHandler from './middleware/errorHandler.js';
+import { generalLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,19 +30,39 @@ connectDB().catch(err => {
   console.log('⚠️  MongoDB connection failed, but server will continue running');
 });
 
-// Middleware
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+      mediaSrc: ["'self'", 'https:', 'http:'],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
+
+// Logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
+// CORS middleware
 app.use(cors({
   origin: 'http://localhost:5173', // Vite default port
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Log all requests
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// General rate limiting for all API routes
+app.use('/api/', generalLimiter);
 
 // Basic health check route
 app.get('/', (req, res) => {
@@ -91,15 +115,8 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    success: false,
-    message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-  });
-});
+// Centralized error handler (must be last)
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {

@@ -82,14 +82,12 @@ const Navbar = ({ onSearch }) => {
             >
               Home
             </button>
-            {loggedIn && (
-              <button
-                onClick={() => navigate('/upload')}
-                className="text-white hover:text-gray-300 transition-colors font-medium"
-              >
-                Upload
-              </button>
-            )}
+            <button
+              onClick={() => navigate(loggedIn ? '/upload' : '/login')}
+              className="text-white hover:text-gray-300 transition-colors font-medium"
+            >
+              Upload
+            </button>
             {loggedIn && (
               <button
                 onClick={() => navigate('/playlists')}
