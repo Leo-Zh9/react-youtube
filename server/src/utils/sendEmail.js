@@ -35,7 +35,10 @@ export const sendEmail = async (options) => {
   }
 
   try {
-    // Create transporter
+    console.log(`📧 Attempting to send email to: ${options.to}`);
+    console.log(`   Using SMTP: ${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT}`);
+    
+    // Create transporter with timeout
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT) || 587,
@@ -44,6 +47,9 @@ export const sendEmail = async (options) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,   // 10 seconds
+      socketTimeout: 15000,     // 15 seconds
     });
 
     // Email options
@@ -55,14 +61,20 @@ export const sendEmail = async (options) => {
       html: options.html,
     };
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+    // Send email with timeout promise
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email send timeout after 20 seconds')), 20000)
+    );
+    
+    const info = await Promise.race([sendPromise, timeoutPromise]);
     
     console.log(`✅ Email sent successfully to: ${options.to}`);
     console.log(`   Message ID: ${info.messageId}`);
     return info;
   } catch (error) {
     console.error('❌ Error sending email:', error.message);
+    console.error('   Error details:', error);
     throw new Error('Failed to send email');
   }
 };
