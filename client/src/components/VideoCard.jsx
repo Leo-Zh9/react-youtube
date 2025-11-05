@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getThumbnailUrl, handleImageError } from '../utils/imageUtils';
 
 const VideoCard = ({ video }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -23,8 +24,9 @@ const VideoCard = ({ video }) => {
         }`}
       >
         <img
-          src={video.thumbnail}
+          src={getThumbnailUrl(video.thumbnail)}
           alt={video.title}
+          onError={handleImageError}
           className="w-full h-36 md:h-40 object-cover"
         />
 

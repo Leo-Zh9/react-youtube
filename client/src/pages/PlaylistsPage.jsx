@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserPlaylists, getPlaylist, deletePlaylist } from '../services/api';
 import { isAuthenticated } from '../services/authService';
+import { getThumbnailUrl, handleImageError } from '../utils/imageUtils';
 
 const PlaylistsPage = () => {
   const navigate = useNavigate();
@@ -207,8 +208,9 @@ const PlaylistsPage = () => {
                   >
                     <div className="relative aspect-video rounded-lg overflow-hidden mb-2">
                       <img
-                        src={video.thumbnail}
+                        src={getThumbnailUrl(video.thumbnail)}
                         alt={video.title}
+                        onError={handleImageError}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-300 flex items-center justify-center">

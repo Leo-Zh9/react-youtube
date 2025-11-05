@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getVideoById, getRecommendedVideos, incrementViewCount, toggleLike, getLikesInfo } from '../services/api';
 import { isAuthenticated } from '../services/authService';
+import { getThumbnailUrl, handleImageError } from '../utils/imageUtils';
 import CommentsSection from '../components/CommentsSection';
 import PlaylistModal from '../components/PlaylistModal';
 
@@ -363,7 +364,7 @@ const VideoPlayerPage = () => {
                   controls
                   autoPlay
                   controlsList="nodownload"
-                  poster={video.thumbnail}
+                  poster={getThumbnailUrl(video.thumbnail)}
                 >
                   <source src={video.videoUrl || video.url} type="video/mp4" />
                   Your browser does not support the video tag.
@@ -527,8 +528,9 @@ const VideoPlayerPage = () => {
                         {/* Thumbnail */}
                         <div className="relative w-40 flex-shrink-0">
                           <img
-                            src={recommendedVideo.thumbnail}
+                            src={getThumbnailUrl(recommendedVideo.thumbnail)}
                             alt={recommendedVideo.title}
+                            onError={handleImageError}
                             className="w-full h-24 object-cover rounded"
                           />
                           <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-1.5 py-0.5 rounded">

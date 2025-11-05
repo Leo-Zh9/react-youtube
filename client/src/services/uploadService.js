@@ -1,5 +1,6 @@
 // Service for handling file uploads to S3 via backend
 
+import axios from 'axios';
 import { getToken } from './authService';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -38,50 +39,34 @@ export const uploadVideoFile = async (videoFile, metadata, thumbnailFile = null,
     if (metadata.duration) formData.append('duration', metadata.duration);
     if (metadata.rating) formData.append('rating', metadata.rating);
 
-    // Create XMLHttpRequest for progress tracking
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-
-      // Set Authorization header
-      xhr.open('POST', `${API_BASE_URL}/upload`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-
-      // Track upload progress
-      if (onProgress) {
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            onProgress(percentComplete);
-          }
-        });
-      }
-
-      // Handle completion
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.video);
-        } else {
-          const error = JSON.parse(xhr.responseText);
-          reject(new Error(error.message || 'Upload failed'));
+    // Upload with axios for better progress tracking
+    const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+          onProgress(percentComplete);
         }
-      });
-
-      // Handle errors
-      xhr.addEventListener('error', () => {
-        reject(new Error('Network error during upload'));
-      });
-
-      xhr.addEventListener('abort', () => {
-        reject(new Error('Upload cancelled'));
-      });
-
-      // Send request
-      xhr.send(formData);
+      },
     });
+
+    if (response.data.success) {
+      return response.data.video;
+    } else {
+      throw new Error(response.data.message || 'Upload failed');
+    }
   } catch (error) {
     console.error('Upload error:', error);
-    throw error;
+    
+    // Handle axios error response
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw new Error(error.message || 'Upload failed. Please try again.');
   }
 };
 
