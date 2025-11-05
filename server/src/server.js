@@ -52,11 +52,30 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// CORS middleware
+// CORS middleware - Allow frontend from environment variable
+const allowedOrigins = [
+  'http://localhost:5173',  // Local Vite dev server
+  'http://localhost:3000',  // Alternative local port
+  process.env.FRONTEND_URL, // Production frontend URL (Vercel)
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default port
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS blocked request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

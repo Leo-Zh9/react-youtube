@@ -1,6 +1,7 @@
 // Authentication service for user login/register
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment variable for API base URL (falls back to localhost for development)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 

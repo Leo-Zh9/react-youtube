@@ -2,7 +2,8 @@
 
 import { getAuthHeader } from './authService';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment variable for API base URL (falls back to localhost for development)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper function to handle API errors
 const handleResponse = async (response) => {
