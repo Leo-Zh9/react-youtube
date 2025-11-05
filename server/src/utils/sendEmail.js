@@ -1,14 +1,22 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
 /**
  * Check if email is configured
  */
 export const isEmailConfigured = () => {
-  return !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+  // Check for SendGrid API key (starts with SG.)
+  const hasSendGrid = process.env.EMAIL_PASS && process.env.EMAIL_PASS.startsWith('SG.');
+  
+  if (!hasSendGrid) {
+    console.warn('⚠️  SendGrid API key not configured');
+    return false;
+  }
+  
+  return true;
 };
 
 /**
- * Send email using nodemailer
+ * Send email using SendGrid HTTP API
  * @param {Object} options - Email options (to, subject, text, html)
  */
 export const sendEmail = async (options) => {
@@ -18,12 +26,10 @@ export const sendEmail = async (options) => {
     console.log('📧 Would have sent email to:', options.to);
     console.log('📝 Subject:', options.subject);
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('⚠️  EMAIL CONFIGURATION MISSING');
-    console.log('Add these to server/.env to enable email:');
-    console.log('   EMAIL_USER=your-email@gmail.com');
-    console.log('   EMAIL_PASS=your-app-password');
-    console.log('   EMAIL_HOST=smtp.gmail.com');
-    console.log('   EMAIL_PORT=587');
+    console.log('⚠️  SENDGRID API KEY MISSING');
+    console.log('Add this to your environment variables:');
+    console.log('   EMAIL_PASS=SG.your-sendgrid-api-key');
+    console.log('   EMAIL_FROM=Your Name <email@example.com>');
     console.log('═══════════════════════════════════════════════════════════');
     
     // In development, don't throw error - just log it
@@ -36,45 +42,37 @@ export const sendEmail = async (options) => {
 
   try {
     console.log(`📧 Attempting to send email to: ${options.to}`);
-    console.log(`   Using SMTP: ${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT}`);
+    console.log(`   Using SendGrid HTTP API (not SMTP)`);
     
-    // Create transporter with timeout
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,   // 10 seconds
-      socketTimeout: 15000,     // 15 seconds
-    });
+    // Set SendGrid API key
+    sgMail.setApiKey(process.env.EMAIL_PASS);
 
-    // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || `"ReactFlix Support" <${process.env.EMAIL_USER}>`,
+    // Prepare email message
+    const msg = {
       to: options.to,
+      from: process.env.EMAIL_FROM || 'noreply@example.com',
       subject: options.subject,
-      text: options.text,
+      text: options.text || 'Please enable HTML to view this email',
       html: options.html,
     };
 
-    // Send email with timeout promise
-    const sendPromise = transporter.sendMail(mailOptions);
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Email send timeout after 20 seconds')), 20000)
-    );
-    
-    const info = await Promise.race([sendPromise, timeoutPromise]);
+    // Send email via SendGrid HTTP API
+    const [response] = await sgMail.send(msg);
     
     console.log(`✅ Email sent successfully to: ${options.to}`);
-    console.log(`   Message ID: ${info.messageId}`);
-    return info;
+    console.log(`   Status Code: ${response.statusCode}`);
+    return { 
+      messageId: response.headers['x-message-id'],
+      statusCode: response.statusCode 
+    };
   } catch (error) {
     console.error('❌ Error sending email:', error.message);
-    console.error('   Error details:', error);
+    
+    // SendGrid-specific error handling
+    if (error.response) {
+      console.error('   SendGrid Error:', error.response.body);
+    }
+    
     throw new Error('Failed to send email');
   }
 };
