@@ -60,6 +60,10 @@ const videoSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  likesCount: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

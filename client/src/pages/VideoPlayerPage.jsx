@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getVideoById, getRecommendedVideos, incrementViewCount } from '../services/api';
+import { getVideoById, getRecommendedVideos, incrementViewCount, toggleLike, getLikesInfo } from '../services/api';
+import { isAuthenticated } from '../services/authService';
 
 const VideoPlayerPage = () => {
   const { id } = useParams();
@@ -9,6 +10,15 @@ const VideoPlayerPage = () => {
   const [recommendedVideos, setRecommendedVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Like state
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+  
+  // Modals
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
   
   // Refs for view tracking
   const videoRef = useRef(null);
@@ -23,14 +33,17 @@ const VideoPlayerPage = () => {
         setError(null);
         window.scrollTo(0, 0);
 
-        // Fetch the main video and recommended videos
-        const [videoData, recommended] = await Promise.all([
+        // Fetch the main video, recommended videos, and likes info
+        const [videoData, recommended, likesData] = await Promise.all([
           getVideoById(id),
           getRecommendedVideos(id, 12),
+          getLikesInfo(id).catch(() => ({ likesCount: 0, isLiked: false })),
         ]);
 
         setVideo(videoData);
         setRecommendedVideos(recommended);
+        setLikesCount(likesData.likesCount || videoData.likesCount || 0);
+        setLiked(likesData.isLiked || false);
       } catch (err) {
         console.error('Error fetching video:', err);
         setError(err.message || 'Failed to load video');
@@ -156,6 +169,87 @@ const VideoPlayerPage = () => {
     };
   }, [video]);
 
+  // Handle like button click
+  const handleLike = async () => {
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: `/watch/${id}` } });
+      return;
+    }
+
+    if (likeLoading) return;
+
+    // Optimistic UI update
+    const wasLiked = liked;
+    const previousCount = likesCount;
+    
+    setLiked(!liked);
+    setLikesCount(liked ? likesCount - 1 : likesCount + 1);
+    setLikeLoading(true);
+
+    try {
+      const result = await toggleLike(id);
+      
+      // Update with server response
+      setLiked(result.liked);
+      setLikesCount(result.likesCount);
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      
+      // Revert on error
+      setLiked(wasLiked);
+      setLikesCount(previousCount);
+      
+      if (err.message.includes('401') || err.message.includes('403')) {
+        navigate('/login', { state: { from: `/watch/${id}` } });
+      }
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  // Handle save to playlist
+  const handleSave = () => {
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: `/watch/${id}` } });
+      return;
+    }
+    setShowPlaylistModal(true);
+  };
+
+  // Handle share
+  const handleShare = async () => {
+    const shareData = {
+      title: video.title,
+      text: `Check out "${video.title}" on ReactFlix!`,
+      url: window.location.href,
+    };
+
+    try {
+      // Try native share API (mobile/modern browsers)
+      if (navigator.share) {
+        await navigator.share(shareData);
+        console.log('✅ Shared successfully');
+      } else {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        setShowShareToast(true);
+        setTimeout(() => setShowShareToast(false), 3000);
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share error:', err);
+        // Fallback to clipboard
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          setShowShareToast(true);
+          setTimeout(() => setShowShareToast(false), 3000);
+        } catch (clipboardErr) {
+          console.error('Clipboard error:', clipboardErr);
+        }
+      }
+    }
+  };
+
   // Format upload date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -164,6 +258,16 @@ const VideoPlayerPage = () => {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  // Format likes count
+  const formatLikesCount = (count) => {
+    if (count >= 1000000) {
+      return (count / 1000000).toFixed(1) + 'M';
+    } else if (count >= 1000) {
+      return (count / 1000).toFixed(1) + 'K';
+    }
+    return count.toString();
   };
 
   // Loading state
@@ -318,25 +422,93 @@ const VideoPlayerPage = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 mb-6">
-                <button className="flex items-center space-x-2 bg-white text-black px-6 py-3 rounded hover:bg-gray-200 transition-all font-semibold">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                  </svg>
-                  <span>Like</span>
+                {/* Like Button */}
+                <button
+                  onClick={handleLike}
+                  disabled={likeLoading}
+                  className={`flex items-center space-x-2 ${
+                    liked
+                      ? 'bg-white text-black'
+                      : 'bg-gray-800 text-white'
+                  } px-6 py-3 rounded hover:opacity-80 transition-all font-semibold disabled:opacity-50`}
+                >
+                  {liked ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 20 20" strokeWidth={2}>
+                      <path d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                    </svg>
+                  )}
+                  <span>{liked ? 'Liked' : 'Like'} {likesCount > 0 && `(${formatLikesCount(likesCount)})`}</span>
                 </button>
-                <button className="flex items-center space-x-2 bg-gray-800 px-6 py-3 rounded hover:bg-gray-700 transition-all font-semibold">
+
+                {/* Save Button */}
+                <button
+                  onClick={handleSave}
+                  className="flex items-center space-x-2 bg-gray-800 px-6 py-3 rounded hover:bg-gray-700 transition-all font-semibold"
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  <span>Add to List</span>
+                  <span>Save to Playlist</span>
                 </button>
-                <button className="flex items-center space-x-2 bg-gray-800 px-6 py-3 rounded hover:bg-gray-700 transition-all font-semibold">
+
+                {/* Share Button */}
+                <button
+                  onClick={handleShare}
+                  className="flex items-center space-x-2 bg-gray-800 px-6 py-3 rounded hover:bg-gray-700 transition-all font-semibold"
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
                   <span>Share</span>
                 </button>
               </div>
+
+              {/* Share Toast */}
+              {showShareToast && (
+                <div className="fixed bottom-8 right-8 bg-green-900 bg-opacity-90 border border-green-500 text-green-200 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Link copied to clipboard!</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Playlist Modal */}
+              {showPlaylistModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowPlaylistModal(false)}>
+                  <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                    <h3 className="text-2xl font-bold text-white mb-4">Save to Playlist</h3>
+                    <p className="text-gray-400 mb-6">
+                      Playlist functionality will be available soon! This feature will allow you to organize your favorite videos into custom playlists.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowPlaylistModal(false)}
+                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded transition-colors"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowPlaylistModal(false);
+                          // TODO: Implement playlist creation
+                        }}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded transition-colors"
+                      >
+                        Create Playlist
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description Box */}
 
               {/* Description Box */}
               <div className="bg-gray-900 rounded-lg p-6">

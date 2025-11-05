@@ -143,3 +143,36 @@ export const incrementViewCount = async (videoId) => {
   }
 };
 
+// Toggle like on a video (requires authentication)
+export const toggleLike = async (videoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/like`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error toggling like for ${videoId}:`, error);
+    throw error;
+  }
+};
+
+// Get likes info for a video
+export const getLikesInfo = async (videoId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/likes`, {
+      headers: {
+        ...getAuthHeader(), // Include auth if available
+      },
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching likes for ${videoId}:`, error);
+    throw error;
+  }
+};
+

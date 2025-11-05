@@ -1,6 +1,7 @@
 import express from 'express';
 import Video from '../models/Video.js';
-import { authenticateToken } from '../middleware/auth.js';
+import Like from '../models/Like.js';
+import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -75,6 +76,130 @@ router.get('/new', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching new videos',
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/videos/:id/like - Toggle like on a video (Protected)
+router.post('/:id/like', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // Find video
+    let video = await Video.findOne({ id });
+    if (!video && id.match(/^[0-9a-fA-F]{24}$/)) {
+      video = await Video.findById(id);
+    }
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: `Video with ID '${id}' not found`,
+      });
+    }
+
+    // Check if user already liked this video
+    const existingLike = await Like.findOne({
+      user: userId,
+      videoId: video.id,
+    });
+
+    let liked = false;
+    let likesCount = video.likesCount || 0;
+
+    if (existingLike) {
+      // Unlike: Remove like and decrement count
+      await Like.deleteOne({ _id: existingLike._id });
+      likesCount = Math.max(0, likesCount - 1);
+      liked = false;
+      
+      console.log(`👎 User ${req.user.email} unliked: ${video.title}`);
+    } else {
+      // Like: Create like and increment count
+      await Like.create({
+        user: userId,
+        videoId: video.id,
+      });
+      likesCount += 1;
+      liked = true;
+      
+      console.log(`👍 User ${req.user.email} liked: ${video.title}`);
+    }
+
+    // Update video likes count
+    const updatedVideo = await Video.findOneAndUpdate(
+      { _id: video._id },
+      { $set: { likesCount, updatedAt: Date.now() } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      liked,
+      likesCount,
+      video: updatedVideo,
+    });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Like status conflict. Please try again.',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating like status',
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/videos/:id/likes - Get likes count and current user's like status
+router.get('/:id/likes', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find video
+    let video = await Video.findOne({ id });
+    if (!video && id.match(/^[0-9a-fA-F]{24}$/)) {
+      video = await Video.findById(id);
+    }
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: `Video with ID '${id}' not found`,
+      });
+    }
+
+    const likesCount = video.likesCount || 0;
+    let isLiked = false;
+
+    // Check if current user liked this video (if authenticated)
+    if (req.user) {
+      const like = await Like.findOne({
+        user: req.user.userId,
+        videoId: video.id,
+      });
+      isLiked = !!like;
+    }
+
+    res.status(200).json({
+      success: true,
+      likesCount,
+      isLiked,
+    });
+  } catch (error) {
+    console.error('Error fetching likes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching likes',
       error: error.message,
     });
   }
