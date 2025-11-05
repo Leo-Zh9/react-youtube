@@ -11,6 +11,7 @@ const LoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,26 +50,32 @@ const LoginPage = () => {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-red-600 font-bold text-4xl tracking-tight mb-2">
+          <h1 className="text-white font-bold text-4xl tracking-tight mb-2">
             REACTFLIX
           </h1>
-          <p className="text-gray-400">Sign in to continue</p>
+          <p className="text-gray-500 text-sm">Sign in to continue</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-gray-900 bg-opacity-80 rounded-lg p-8 shadow-xl">
-          <h2 className="text-2xl font-bold text-white mb-6">Login</h2>
+        <div className="bg-gray-950 border border-gray-900 p-8">
+          <h2 className="text-2xl font-semibold text-white mb-6">Login</h2>
 
-          {error && (
-            <div className="bg-red-900 bg-opacity-50 border border-red-500 text-red-200 px-4 py-3 rounded mb-6">
-              <p className="text-sm">{error}</p>
+          {successMessage && (
+            <div className="bg-gray-900 border-l-4 border-white px-4 py-3 mb-6">
+              <p className="text-white text-sm">{successMessage}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-gray-900 border-l-4 border-white px-4 py-3 mb-6">
+              <p className="text-white text-sm">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-3">
                 Email
               </label>
               <input
@@ -78,7 +85,7 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your@email.com"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all"
                 disabled={loading}
                 required
               />
@@ -86,9 +93,17 @@ const LoginPage = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-400">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-gray-500 hover:text-white transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 id="password"
@@ -96,7 +111,7 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all"
                 disabled={loading}
                 required
               />
@@ -106,7 +121,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+              className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-black font-semibold py-3 transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
             >
               {loading ? (
                 <>
@@ -140,11 +155,11 @@ const LoginPage = () => {
 
           {/* Register Link */}
           <div className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               Don't have an account?{' '}
               <Link
                 to="/register"
-                className="text-red-500 hover:text-red-400 font-semibold"
+                className="text-white hover:text-gray-300 font-medium"
               >
                 Register here
               </Link>
@@ -155,7 +170,7 @@ const LoginPage = () => {
           <div className="mt-4 text-center">
             <Link
               to="/"
-              className="text-gray-500 hover:text-gray-400 text-sm"
+              className="text-gray-600 hover:text-gray-400 text-sm"
             >
               ← Back to Home
             </Link>

@@ -45,8 +45,8 @@ const RegisterPage = () => {
     try {
       await register(formData.email, formData.password);
       
-      // Redirect to upload page after successful registration
-      navigate('/upload', { replace: true });
+      // Redirect to home page after successful registration
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
       setLoading(false);
@@ -58,26 +58,26 @@ const RegisterPage = () => {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-red-600 font-bold text-4xl tracking-tight mb-2">
+          <h1 className="text-white font-bold text-4xl tracking-tight mb-2">
             REACTFLIX
           </h1>
-          <p className="text-gray-400">Create your account</p>
+          <p className="text-gray-500 text-sm">Create your account</p>
         </div>
 
         {/* Register Form */}
-        <div className="bg-gray-900 bg-opacity-80 rounded-lg p-8 shadow-xl">
-          <h2 className="text-2xl font-bold text-white mb-6">Register</h2>
+        <div className="bg-gray-950 border border-gray-900 p-8">
+          <h2 className="text-2xl font-semibold text-white mb-6">Register</h2>
 
           {error && (
-            <div className="bg-red-900 bg-opacity-50 border border-red-500 text-red-200 px-4 py-3 rounded mb-6">
-              <p className="text-sm">{error}</p>
+            <div className="bg-gray-900 border-l-4 border-white px-4 py-3 mb-6">
+              <p className="text-white text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-3">
                 Email
               </label>
               <input
@@ -87,7 +87,7 @@ const RegisterPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your@email.com"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all"
                 disabled={loading}
                 required
               />
@@ -95,7 +95,7 @@ const RegisterPage = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-3">
                 Password
               </label>
               <input
@@ -105,16 +105,19 @@ const RegisterPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all"
                 disabled={loading}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
+              <p className="text-xs text-gray-600 mt-2">Minimum 6 characters</p>
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-400 mb-3"
+              >
                 Confirm Password
               </label>
               <input
@@ -124,7 +127,7 @@ const RegisterPage = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-black border border-gray-800 px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white focus:bg-gray-950 transition-all"
                 disabled={loading}
                 required
               />
@@ -134,12 +137,12 @@ const RegisterPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+              className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-black font-semibold py-3 transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
             >
               {loading ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    className="animate-spin -ml-1 mr-3 h-5 w-5"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -168,11 +171,11 @@ const RegisterPage = () => {
 
           {/* Login Link */}
           <div className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="text-red-500 hover:text-red-400 font-semibold"
+                className="text-white hover:text-gray-300 font-medium"
               >
                 Login here
               </Link>
@@ -183,7 +186,7 @@ const RegisterPage = () => {
           <div className="mt-4 text-center">
             <Link
               to="/"
-              className="text-gray-500 hover:text-gray-400 text-sm"
+              className="text-gray-600 hover:text-gray-400 text-sm"
             >
               ← Back to Home
             </Link>
@@ -195,4 +198,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-
