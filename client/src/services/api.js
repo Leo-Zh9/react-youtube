@@ -176,3 +176,56 @@ export const getLikesInfo = async (videoId) => {
   }
 };
 
+// Get comments for a video
+export const getComments = async (videoId, cursor = null, limit = 20) => {
+  try {
+    const queryParams = new URLSearchParams({ limit: limit.toString() });
+    if (cursor) {
+      queryParams.append('cursor', cursor);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/comments?${queryParams}`);
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching comments for ${videoId}:`, error);
+    throw error;
+  }
+};
+
+// Add a comment to a video (requires authentication)
+export const addComment = async (videoId, text) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ text }),
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error adding comment to ${videoId}:`, error);
+    throw error;
+  }
+};
+
+// Delete a comment (requires authentication and ownership)
+export const deleteComment = async (commentId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error(`Error deleting comment ${commentId}:`, error);
+    throw error;
+  }
+};
+

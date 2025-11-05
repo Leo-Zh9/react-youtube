@@ -11,6 +11,7 @@ import { initializeS3 } from './config/aws.js';
 import videoRoutes from './routes/videoRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -69,6 +70,9 @@ app.use('/api/videos', videoRoutes);
 
 // Upload routes - S3 file upload (Protected)
 app.use('/api/upload', uploadRoutes);
+
+// Comment routes - Comments on videos
+app.use('/api', commentRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getVideoById, getRecommendedVideos, incrementViewCount, toggleLike, getLikesInfo } from '../services/api';
 import { isAuthenticated } from '../services/authService';
+import CommentsSection from '../components/CommentsSection';
 
 const VideoPlayerPage = () => {
   const { id } = useParams();
@@ -509,9 +510,7 @@ const VideoPlayerPage = () => {
               )}
 
               {/* Description Box */}
-
-              {/* Description Box */}
-              <div className="bg-gray-900 rounded-lg p-6">
+              <div className="bg-gray-900 rounded-lg p-6 mb-8">
                 <h2 className="text-xl font-semibold mb-3">Description</h2>
                 <p className="text-gray-300 leading-relaxed mb-4">
                   {video.description}
@@ -524,6 +523,9 @@ const VideoPlayerPage = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Comments Section */}
+              <CommentsSection videoId={video.id || id} />
             </div>
 
             {/* Recommended Videos Sidebar - Takes 1 column on large screens */}
