@@ -511,6 +511,7 @@ const VideoPlayerPage = () => {
               {showPlaylistModal && (
                 <PlaylistModal
                   videoId={video.id || id}
+                  videoTitle={video.title}
                   onClose={handleClosePlaylistModal}
                 />
               )}

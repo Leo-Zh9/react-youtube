@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getUserPlaylists, createPlaylist, addToPlaylist, removeFromPlaylist } from '../services/api';
+import { toast } from '../hooks/useToast';
 
-const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
+const PlaylistModal = ({ videoId, videoTitle = 'Video', onClose, initialPlaylists = [] }) => {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +39,8 @@ const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
 
   const handleTogglePlaylist = async (playlistId) => {
     const isSelected = selectedPlaylists.has(playlistId);
+    const playlist = playlists.find(p => p._id === playlistId);
+    const playlistName = playlist?.name || 'playlist';
     
     // Optimistic update
     const newSelected = new Set(selectedPlaylists);
@@ -51,11 +54,14 @@ const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
     try {
       if (isSelected) {
         await removeFromPlaylist(playlistId, videoId);
+        toast.info(`Removed "${videoTitle}" from "${playlistName}"`);
       } else {
         await addToPlaylist(playlistId, videoId);
+        toast.success(`Successfully added "${videoTitle}" to "${playlistName}"`);
       }
     } catch (err) {
       console.error('Error toggling playlist:', err);
+      toast.error(`Failed to ${isSelected ? 'remove from' : 'add to'} playlist`);
       // Revert on error
       setSelectedPlaylists(selectedPlaylists);
     }
@@ -78,6 +84,9 @@ const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
       // Automatically add current video to new playlist
       await addToPlaylist(newPlaylist._id, videoId);
       setSelectedPlaylists(prev => new Set([...prev, newPlaylist._id]));
+      
+      // Show success toast
+      toast.success(`Created "${newPlaylist.name}" and added "${videoTitle}"`);
       
       // Reset form
       setNewPlaylistName('');
@@ -183,7 +192,7 @@ const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
                 <p className="text-gray-500 text-sm">Create one to get started!</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 mb-6">
                 {playlists.map((playlist) => (
                   <label
                     key={playlist._id}
@@ -203,6 +212,21 @@ const PlaylistModal = ({ videoId, onClose, initialPlaylists = [] }) => {
                     </div>
                   </label>
                 ))}
+              </div>
+            )}
+
+            {/* Done Button */}
+            {!loading && (
+              <div className="border-t border-gray-700 pt-4 mt-4">
+                <button
+                  onClick={onClose}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Done</span>
+                </button>
               </div>
             )}
           </>
