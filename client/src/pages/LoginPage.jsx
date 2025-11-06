@@ -11,7 +11,10 @@ const LoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.message || 
+    (location.state?.from === '/upload' ? 'Please log in to upload videos' : '')
+  );
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {

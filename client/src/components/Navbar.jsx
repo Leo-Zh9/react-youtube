@@ -96,6 +96,19 @@ const Navbar = ({ onSearch }) => {
             >
               Home
             </button>
+            <button
+              onClick={() => {
+                if (loggedIn) {
+                  navigate('/upload');
+                } else {
+                  // Redirect to login with return URL
+                  navigate('/login', { state: { from: '/upload' } });
+                }
+              }}
+              className="text-white hover:text-gray-300 transition-colors font-medium"
+            >
+              Upload
+            </button>
             {loggedIn && (
               <button
                 onClick={() => navigate('/uploads')}
