@@ -1,6 +1,7 @@
 // API service for fetching video data from the backend
 
 import { getAuthHeader } from './authService';
+import { fetchWithRetry, fetchWithCache, clearCache } from '../utils/fetchWithRetry';
 
 // Use environment variable for API base URL (falls back to localhost for development)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -16,6 +17,22 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
+// Export clearCache for use after mutations
+export { clearCache };
+
+// Get home page data (combined endpoint to reduce requests)
+export const getHomeData = async (limit = 100) => {
+  try {
+    const url = `${API_BASE_URL}/videos/home?limit=${limit}`;
+    // Cache for 10 minutes (600000ms)
+    const data = await fetchWithCache(url, {}, 600000);
+    return data.data; // Return { allVideos, newReleases, counts }
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    throw error;
+  }
+};
+
 // Get all videos with optional sorting and pagination
 export const getAllVideos = async (options = {}) => {
   try {
@@ -26,8 +43,9 @@ export const getAllVideos = async (options = {}) => {
       sort,
     });
     
-    const response = await fetch(`${API_BASE_URL}/videos?${queryParams}`);
-    const data = await handleResponse(response);
+    const url = `${API_BASE_URL}/videos?${queryParams}`;
+    // Cache for 5 minutes
+    const data = await fetchWithCache(url, {}, 300000);
     return data; // Return full response with pagination info
   } catch (error) {
     console.error('Error fetching all videos:', error);
@@ -38,8 +56,9 @@ export const getAllVideos = async (options = {}) => {
 // Get new releases (newest videos)
 export const getNewReleases = async (limit = 20) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/new?limit=${limit}`);
-    const data = await handleResponse(response);
+    const url = `${API_BASE_URL}/videos/new?limit=${limit}`;
+    // Cache for 5 minutes
+    const data = await fetchWithCache(url, {}, 300000);
     return data.data; // Extract the data array from the API response
   } catch (error) {
     console.error('Error fetching new releases:', error);
@@ -50,8 +69,9 @@ export const getNewReleases = async (limit = 20) => {
 // Get single video by ID
 export const getVideoById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${id}`);
-    const data = await handleResponse(response);
+    const url = `${API_BASE_URL}/videos/${id}`;
+    // Cache for 5 minutes
+    const data = await fetchWithCache(url, {}, 300000);
     return data.data; // Extract the data object from the API response
   } catch (error) {
     console.error(`Error fetching video ${id}:`, error);
@@ -62,7 +82,7 @@ export const getVideoById = async (id) => {
 // Add new video (Requires authentication)
 export const addVideo = async (videoData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/videos`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,6 +91,8 @@ export const addVideo = async (videoData) => {
       body: JSON.stringify(videoData),
     });
     const data = await handleResponse(response);
+    // Clear cache after adding
+    clearCache();
     return data.data;
   } catch (error) {
     console.error('Error adding video:', error);
@@ -81,7 +103,7 @@ export const addVideo = async (videoData) => {
 // Update video (Admin functionality)
 export const updateVideo = async (id, videoData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${id}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/videos/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -89,6 +111,8 @@ export const updateVideo = async (id, videoData) => {
       body: JSON.stringify(videoData),
     });
     const data = await handleResponse(response);
+    // Clear cache after updating
+    clearCache();
     return data.data;
   } catch (error) {
     console.error(`Error updating video ${id}:`, error);
@@ -99,13 +123,15 @@ export const updateVideo = async (id, videoData) => {
 // Delete video (Owner or Admin only)
 export const deleteVideo = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${id}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/videos/${id}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(), // Add Authorization header
       },
     });
     const data = await handleResponse(response);
+    // Clear cache after deleting
+    clearCache();
     return data;
   } catch (error) {
     console.error(`Error deleting video ${id}:`, error);
@@ -136,21 +162,22 @@ export const getRecommendedVideos = async (currentVideoId, limit = 10) => {
 // Increment view count for a video
 export const incrementViewCount = async (videoId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/view`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}/videos/${videoId}/view`, {
       method: 'PATCH',
-    });
+    }, 1); // Only retry once for view counts
     const data = await handleResponse(response);
     return data;
   } catch (error) {
     console.error(`Error incrementing views for ${videoId}:`, error);
-    throw error;
+    // Don't throw - view count is not critical
+    return null;
   }
 };
 
 // Toggle like on a video (requires authentication)
 export const toggleLike = async (videoId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/like`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/${videoId}/like`, {
       method: 'POST',
       headers: {
         ...getAuthHeader(),
@@ -167,7 +194,7 @@ export const toggleLike = async (videoId) => {
 // Get likes info for a video
 export const getLikesInfo = async (videoId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/likes`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/${videoId}/likes`, {
       headers: {
         ...getAuthHeader(), // Include auth if available
       },
@@ -188,7 +215,7 @@ export const getComments = async (videoId, cursor = null, limit = 20) => {
       queryParams.append('cursor', cursor);
     }
     
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/comments?${queryParams}`);
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/${videoId}/comments?${queryParams}`);
     const data = await handleResponse(response);
     return data;
   } catch (error) {
@@ -200,7 +227,7 @@ export const getComments = async (videoId, cursor = null, limit = 20) => {
 // Add a comment to a video (requires authentication)
 export const addComment = async (videoId, text) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/comments`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/${videoId}/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -219,7 +246,7 @@ export const addComment = async (videoId, text) => {
 // Delete a comment (requires authentication and ownership)
 export const deleteComment = async (commentId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
@@ -238,7 +265,7 @@ export const deleteComment = async (commentId) => {
 // Get user's playlists
 export const getUserPlaylists = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists`, {
       headers: {
         ...getAuthHeader(),
       },
@@ -254,7 +281,7 @@ export const getUserPlaylists = async () => {
 // Get single playlist with video details
 export const getPlaylist = async (playlistId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists/${playlistId}`, {
       headers: {
         ...getAuthHeader(),
       },
@@ -270,7 +297,7 @@ export const getPlaylist = async (playlistId) => {
 // Create a new playlist
 export const createPlaylist = async (name) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -289,7 +316,7 @@ export const createPlaylist = async (name) => {
 // Add video to playlist
 export const addToPlaylist = async (playlistId, videoId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/add`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists/${playlistId}/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -308,7 +335,7 @@ export const addToPlaylist = async (playlistId, videoId) => {
 // Remove video from playlist
 export const removeFromPlaylist = async (playlistId, videoId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/remove`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists/${playlistId}/remove`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -327,7 +354,7 @@ export const removeFromPlaylist = async (playlistId, videoId) => {
 // Delete a playlist
 export const deletePlaylist = async (playlistId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/playlists/${playlistId}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
@@ -355,7 +382,7 @@ export const searchVideos = async (params = {}) => {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
     
-    const response = await fetch(`${API_BASE_URL}/videos/search?${queryParams.toString()}`);
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/search?${queryParams.toString()}`);
     const data = await handleResponse(response);
     return data;
   } catch (error) {
@@ -367,7 +394,7 @@ export const searchVideos = async (params = {}) => {
 // Get available filter options
 export const getSearchFilters = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/search/filters`);
+    const response = await fetchWithRetry(`${API_BASE_URL/videos/search/filters`);
     const data = await handleResponse(response);
     return data.data;
   } catch (error) {
@@ -400,7 +427,7 @@ export const getMyVideos = async (page = 1, limit = 20) => {
 // Get user's overall statistics
 export const getUserStats = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/stats`, {
+    const response = await fetchWithRetry(`${API_BASE_URL/stats`, {
       headers: {
         ...getAuthHeader(),
       },

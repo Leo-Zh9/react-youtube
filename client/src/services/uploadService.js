@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import { getToken } from './authService';
+import { clearCache } from './api';
 
 // Use environment variable for API base URL (falls back to localhost for development)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -55,6 +56,8 @@ export const uploadVideoFile = async (videoFile, metadata, thumbnailFile = null,
     });
 
     if (response.data.success) {
+      // Clear API cache so homepage shows new video immediately
+      clearCache();
       return response.data.video;
     } else {
       throw new Error(response.data.message || 'Upload failed');

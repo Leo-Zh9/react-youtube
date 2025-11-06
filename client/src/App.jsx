@@ -16,7 +16,7 @@ import ToastContainer from './components/ToastContainer';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ErrorBoundary>
         <div className="App">
           <ToastContainer />
@@ -36,23 +36,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
-          <Route
-            path="/playlists"
-            element={
-              <ProtectedRoute>
-                <PlaylistsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/uploads"
-            element={
-              <ProtectedRoute>
-                <UploadsPage />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/playlists"
+              element={
+                <ProtectedRoute>
+                  <PlaylistsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/uploads"
+              element={
+                <ProtectedRoute>
+                  <UploadsPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
         </div>
       </ErrorBoundary>
     </Router>

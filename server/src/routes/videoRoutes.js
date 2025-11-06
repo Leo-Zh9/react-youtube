@@ -6,14 +6,60 @@ import Comment from '../models/Comment.js';
 
 const router = express.Router();
 
+// GET /api/videos/home - Combined endpoint for homepage (reduces requests)
+router.get('/home', async (req, res) => {
+  try {
+    // Set cache headers (10 minutes)
+    res.set('Cache-Control', 'public, max-age=600');
+    
+    const limit = parseInt(req.query.limit) || 100;
+    
+    // Fetch all data in parallel
+    const [allVideos, newReleases] = await Promise.all([
+      Video.find()
+        .populate('owner', 'email')
+        .sort({ createdAt: -1 })
+        .limit(limit),
+      Video.find()
+        .populate('owner', 'email')
+        .sort({ createdAt: -1 })
+        .limit(20),
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        allVideos,
+        newReleases,
+        counts: {
+          total: allVideos.length,
+          new: newReleases.length,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching home data',
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/videos - Get all videos with sorting and pagination
 router.get('/', optionalAuth, async (req, res) => {
   try {
+    // Set cache headers (10 minutes for public requests, no cache for personal requests)
+    const mine = req.query.mine === 'true';
+    if (!mine) {
+      res.set('Cache-Control', 'public, max-age=600'); // 10 minutes
+    }
+    
     // Extract query parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 24;
     const sortParam = req.query.sort || 'createdAt';
-    const mine = req.query.mine === 'true';
     
     // Build query filter
     let filter = {};
@@ -98,6 +144,9 @@ router.get('/', optionalAuth, async (req, res) => {
 // GET /api/videos/new - Get newest videos (most recent uploads)
 router.get('/new', async (req, res) => {
   try {
+    // Set cache headers (10 minutes)
+    res.set('Cache-Control', 'public, max-age=600');
+    
     const limit = parseInt(req.query.limit) || 20;
     
     // Fetch newest videos sorted by createdAt descending
