@@ -351,6 +351,27 @@ export const removeFromPlaylist = async (playlistId, videoId) => {
   }
 };
 
+// Upload playlist thumbnail
+export const uploadPlaylistThumbnail = async (playlistId, thumbnailFile) => {
+  try {
+    const formData = new FormData();
+    formData.append('thumbnail', thumbnailFile);
+
+    const response = await fetchWithRetry(`${API_BASE_URL}/playlists/${playlistId}/upload-thumbnail`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+      },
+      body: formData,
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error(`Error uploading playlist thumbnail:`, error);
+    throw error;
+  }
+};
+
 // Update a playlist (name and/or thumbnail)
 export const updatePlaylist = async (playlistId, updates) => {
   try {

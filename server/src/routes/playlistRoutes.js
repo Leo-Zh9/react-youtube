@@ -2,6 +2,7 @@ import express from 'express';
 import Playlist from '../models/Playlist.js';
 import Video from '../models/Video.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { getUploadMiddleware, isS3Configured } from '../config/aws.js';
 
 const router = express.Router();
 
@@ -248,6 +249,89 @@ router.post('/:pid/remove', async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// POST /api/playlists/:pid/upload-thumbnail - Upload thumbnail for playlist
+router.post('/:pid/upload-thumbnail', async (req, res) => {
+  // Check if S3 is configured
+  if (!isS3Configured()) {
+    return res.status(503).json({
+      success: false,
+      message: 'AWS S3 is not configured.',
+    });
+  }
+
+  // Get upload middleware
+  const upload = getUploadMiddleware();
+  
+  if (!upload) {
+    return res.status(503).json({
+      success: false,
+      message: 'File upload not available',
+    });
+  }
+
+  // Apply multer middleware for single image
+  upload.single('thumbnail')(req, res, async (err) => {
+    if (err) {
+      console.error('Thumbnail upload error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload error',
+      });
+    }
+
+    try {
+      // Check if file was uploaded
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No thumbnail file uploaded',
+        });
+      }
+
+      // Find playlist
+      const playlist = await Playlist.findById(req.params.pid);
+
+      if (!playlist) {
+        return res.status(404).json({
+          success: false,
+          message: 'Playlist not found',
+        });
+      }
+
+      // Check ownership
+      if (playlist.user.toString() !== req.user.userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to modify this playlist',
+        });
+      }
+
+      // Get uploaded file S3 URL
+      const thumbnailUrl = req.file.location;
+
+      // Update playlist thumbnail
+      playlist.thumbnail = thumbnailUrl;
+      playlist.updatedAt = Date.now();
+      await playlist.save();
+
+      console.log(`📷 Thumbnail uploaded for playlist: ${playlist.name}`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Thumbnail uploaded successfully',
+        data: playlist,
+      });
+    } catch (error) {
+      console.error('Error uploading playlist thumbnail:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading thumbnail',
+        error: error.message,
+      });
+    }
+  });
 });
 
 // PATCH /api/playlists/:pid - Update playlist name and/or thumbnail
