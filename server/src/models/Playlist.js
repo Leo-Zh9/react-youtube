@@ -13,6 +13,10 @@ const playlistSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Playlist name must not exceed 100 characters'],
   },
+  thumbnail: {
+    type: String,
+    default: null, // URL to custom playlist thumbnail
+  },
   videos: {
     type: [String], // Array of video IDs
     default: [],

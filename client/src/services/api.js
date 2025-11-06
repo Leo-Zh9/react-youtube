@@ -351,6 +351,25 @@ export const removeFromPlaylist = async (playlistId, videoId) => {
   }
 };
 
+// Update a playlist (name and/or thumbnail)
+export const updatePlaylist = async (playlistId, updates) => {
+  try {
+    const response = await fetchWithRetry(`${API_BASE_URL}/playlists/${playlistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(updates),
+    });
+    const data = await handleResponse(response);
+    return data.data;
+  } catch (error) {
+    console.error(`Error updating playlist ${playlistId}:`, error);
+    throw error;
+  }
+};
+
 // Delete a playlist
 export const deletePlaylist = async (playlistId) => {
   try {

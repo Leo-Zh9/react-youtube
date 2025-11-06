@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getUserPlaylists, getPlaylist, deletePlaylist } from '../services/api';
 import { isAuthenticated } from '../services/authService';
 import { getThumbnailUrl, handleImageError } from '../utils/imageUtils';
+import EditPlaylistModal from '../components/EditPlaylistModal';
+import { toast } from '../hooks/useToast';
 
 const PlaylistsPage = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const PlaylistsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
+  const [editingPlaylist, setEditingPlaylist] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -48,7 +51,25 @@ const PlaylistsPage = () => {
     }
   };
 
-  const handleDeletePlaylist = async (playlistId, playlistName) => {
+  const handleEditPlaylist = (playlist, e) => {
+    e.stopPropagation();
+    setEditingPlaylist(playlist);
+  };
+
+  const handleUpdatePlaylist = (updatedPlaylist) => {
+    setPlaylists(prev => prev.map(p => 
+      p._id === updatedPlaylist._id ? updatedPlaylist : p
+    ));
+    
+    // Update selectedPlaylist if it's the one being edited
+    if (selectedPlaylist?._id === updatedPlaylist._id) {
+      setSelectedPlaylist(updatedPlaylist);
+    }
+  };
+
+  const handleDeletePlaylist = async (playlistId, playlistName, e) => {
+    e.stopPropagation();
+    
     if (!window.confirm(`Delete playlist "${playlistName}"?`)) {
       return;
     }
@@ -56,6 +77,7 @@ const PlaylistsPage = () => {
     try {
       await deletePlaylist(playlistId);
       setPlaylists(prev => prev.filter(p => p._id !== playlistId));
+      toast.success(`Deleted "${playlistName}"`);
       
       // If viewing this playlist, go back to list
       if (selectedPlaylist?._id === playlistId) {
@@ -64,7 +86,7 @@ const PlaylistsPage = () => {
       }
     } catch (err) {
       console.error('Error deleting playlist:', err);
-      alert('Failed to delete playlist');
+      toast.error('Failed to delete playlist');
     }
   };
 
@@ -151,8 +173,19 @@ const PlaylistsPage = () => {
                     onClick={() => handleOpenPlaylist(playlist._id)}
                     className="w-full text-left"
                   >
-                    <div className="aspect-video bg-gradient-to-br from-gray-900 to-black flex items-center justify-center border-b border-gray-900">
-                      <div className="text-center">
+                    <div className="aspect-video bg-gradient-to-br from-gray-900 to-black flex items-center justify-center border-b border-gray-900 overflow-hidden">
+                      {playlist.thumbnail ? (
+                        <img
+                          src={playlist.thumbnail}
+                          alt={playlist.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'block';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`text-center ${playlist.thumbnail ? 'hidden' : ''}`}>
                         <svg className="w-12 h-12 mx-auto mb-2 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                         </svg>
@@ -170,10 +203,19 @@ const PlaylistsPage = () => {
                       </p>
                     </div>
                   </button>
-                  <div className="px-4 pb-4">
+                  <div className="px-4 pb-4 flex gap-2">
                     <button
-                      onClick={() => handleDeletePlaylist(playlist._id, playlist.name)}
-                      className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-500 hover:text-white py-2 border border-gray-800 hover:border-gray-700 transition-all"
+                      onClick={(e) => handleEditPlaylist(playlist, e)}
+                      className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-500 hover:text-white py-2 border border-gray-800 hover:border-gray-700 transition-all"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                      <span className="text-sm">Edit</span>
+                    </button>
+                    <button
+                      onClick={(e) => handleDeletePlaylist(playlist._id, playlist.name, e)}
+                      className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-red-900/50 text-gray-500 hover:text-red-400 py-2 border border-gray-800 hover:border-red-700 transition-all"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -238,6 +280,15 @@ const PlaylistsPage = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Edit Playlist Modal */}
+        {editingPlaylist && (
+          <EditPlaylistModal
+            playlist={editingPlaylist}
+            onClose={() => setEditingPlaylist(null)}
+            onUpdate={handleUpdatePlaylist}
+          />
         )}
       </div>
     </div>

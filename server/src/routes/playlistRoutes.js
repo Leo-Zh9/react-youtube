@@ -250,6 +250,74 @@ router.post('/:pid/remove', async (req, res) => {
   }
 });
 
+// PATCH /api/playlists/:pid - Update playlist name and/or thumbnail
+router.patch('/:pid', async (req, res) => {
+  try {
+    const { name, thumbnail } = req.body;
+
+    // Find playlist
+    const playlist = await Playlist.findById(req.params.pid);
+
+    if (!playlist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Playlist not found',
+      });
+    }
+
+    // Check ownership
+    if (playlist.user.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to modify this playlist',
+      });
+    }
+
+    // Update fields if provided
+    if (name !== undefined && name.trim()) {
+      playlist.name = name.trim();
+    }
+    
+    if (thumbnail !== undefined) {
+      playlist.thumbnail = thumbnail;
+    }
+
+    playlist.updatedAt = Date.now();
+    await playlist.save();
+
+    console.log(`✏️ Playlist updated by ${req.user.email}: ${playlist.name}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Playlist updated successfully',
+      data: playlist,
+    });
+  } catch (error) {
+    console.error('Error updating playlist:', error);
+
+    // Handle duplicate playlist name
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have a playlist with this name',
+      });
+    }
+
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating playlist',
+      error: error.message,
+    });
+  }
+});
+
 // DELETE /api/playlists/:pid - Delete a playlist
 router.delete('/:pid', async (req, res) => {
   try {
