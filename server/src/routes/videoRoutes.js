@@ -50,6 +50,7 @@ router.get('/', optionalAuth, async (req, res) => {
     
     // Fetch videos with sorting and pagination
     const videos = await Video.find(filter)
+      .populate('owner', 'email')
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -101,6 +102,7 @@ router.get('/new', async (req, res) => {
     
     // Fetch newest videos sorted by createdAt descending
     const videos = await Video.find()
+      .populate('owner', 'email')
       .sort({ createdAt: -1 })
       .limit(limit);
     
@@ -321,7 +323,7 @@ router.patch('/:id/view', async (req, res) => {
 // GET /api/videos/:id - Get single video by custom ID
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const video = await Video.findOne({ id: req.params.id });
+    const video = await Video.findOne({ id: req.params.id }).populate('owner', 'email');
 
     if (!video) {
       return res.status(404).json({
@@ -346,6 +348,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       data: {
         ...video.toObject(),
         inPlaylists,
+        uploaderEmail: video.owner?.email || 'Unknown',
       },
     });
   } catch (error) {
